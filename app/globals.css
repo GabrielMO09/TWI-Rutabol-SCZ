@@ -1,26 +1,112 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --ink: #10261a;
+  --muted: #5a6e62;
+  --line: #dce8e0;
+  --soft: #f2f8f4;
+  --g500: #16a34a;
+  --g600: #15803d;
+  --g900: #0f3d24;
+  --warn: #b45309;
+  --danger: #b91c1c;
+  color-scheme: light;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
+  --color-ink: var(--ink);
+  --color-muted: var(--muted);
+  --color-line: var(--line);
+  --color-soft: var(--soft);
+  --color-brand: var(--g600);
+  --color-brand-mid: var(--g500);
+  --color-brand-dark: var(--g900);
+  --color-warn: var(--warn);
+  --color-danger: var(--danger);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+body {
+  background: #ffffff;
+  color: var(--ink);
+  font-family: var(--font-geist-sans), system-ui, sans-serif;
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+.btn {
+  @apply inline-flex h-11 items-center justify-center gap-2 rounded-lg px-4 text-sm font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand disabled:cursor-not-allowed disabled:opacity-50;
+}
+.btn-primary {
+  @apply bg-brand text-white hover:bg-brand-dark;
+}
+.btn-outline {
+  @apply border border-line bg-white text-brand-dark hover:bg-soft;
+}
+.btn-danger {
+  @apply bg-danger text-white hover:bg-red-800;
+}
+.btn-lg {
+  @apply h-16 rounded-xl text-lg;
+}
+.card {
+  @apply rounded-xl border border-line bg-white;
+}
+.input {
+  @apply h-11 w-full rounded-lg border border-line bg-white px-3 text-sm outline-none focus:border-brand focus:ring-2 focus:ring-brand/20;
+}
+.label {
+  @apply mb-1.5 block text-sm font-medium;
+}
+.chip {
+  @apply inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold;
+}
+
+.leaflet-container {
+  font-family: inherit;
+}
+.leaflet-tile-pane {
+  filter: grayscale(0.35) saturate(0.8);
+}
+.bus-pin {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 136px;
+  white-space: nowrap;
+  padding: 4px 8px;
+  border: 2px solid #fff;
+  border-radius: 10px;
+  background: var(--g600);
+  color: #fff;
+  box-shadow: 0 2px 8px rgb(0 0 0 / 0.25);
+  line-height: 1.15;
+}
+.bus-pin .t {
+  font-size: 12px;
+  font-weight: 700;
+}
+.bus-pin .o {
+  font-size: 10px;
+  opacity: 0.92;
+}
+.bus-pin.s-moderado {
+  background: #4d7c0f;
+}
+.bus-pin.s-casi-lleno {
+  background: var(--warn);
+}
+.bus-pin.s-lleno {
+  background: var(--danger);
+}
+.bus-pin.sel {
+  outline: 3px solid var(--g900);
+  outline-offset: 1px;
+}
+.user-dot {
+  width: 16px;
+  height: 16px;
+  border: 3px solid #fff;
+  border-radius: 999px;
+  background: #0f3d24;
+  box-shadow: 0 0 0 6px rgb(21 128 61 / 0.25);
 }
