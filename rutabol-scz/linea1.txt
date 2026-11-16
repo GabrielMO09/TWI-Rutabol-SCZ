@@ -1,0 +1,254 @@
+Av. Los Pinos @ Parada Final SUR Linea 1 y 115
+Calle El Nogal @ Calle Los Sauces
+Calle Los Ceibos @ Plazuela Urb. Toborochi
+Calle de Barrio @ Plazuela Urb. Toborochi
+Av. Los Pinos @ Plazuela Urb. Toborochi
+Av. Los Pinos @ Calle Sirari
+Av. Los Pinos @ Av. Miguel de Cervantes
+Av. Miguel de Cervantes @ Mercado El Paraiso
+Av. Miguel de Cervantes @ 7mo anillo
+7mo Anillo @ V
+7mo anillo @ Calle Los Sauces
+7mo anillo @ Calle Rosas de Saron
+Calle Rosas de Saron @ I
+Av. Jesus de Nazareth @ Parque Urbano los Penocos
+Calle Baldomero @ Parque Urbano los Penocos
+Av. Pedro Casals @ Hogar Barrio Juvenil
+Calle 20 de Enero @ Calle Franco de Goya
+Calle 20 de Enero @ U.E. Universitario Sur
+6to anillo @ Av. Domingo Savio
+Av. Domingo Savio @ 6to anillo
+Av. Domingo Savio @ I
+Av. Domingo Savio @ Colegio Don Bosco Miguel Magone
+Iglesia Don Bosco Sur @ Av. Petrolera
+Av. Maria Auxiliadora @ I
+Av. Maria Auxiliadora @ Calle 8 de Octubre
+Av. Maria Auxiliadora @ Av. Jerusalen
+Av. Moscú @ 5to Anillo
+Av. Moscú @ 5to Anillo
+Mercado La Cuchilla
+Av. Moscú @ Av. 6 de agosto
+Av. Moscú @ zona Calle Dinamarca
+Av. Moscú @ Calle Hugo Babranco
+Av. Moscú @ Cementerio La Cuchilla
+4to Anillo @ Av. Moscú
+4to anillo @ Av. Fatima
+Av. Fatima @ Av. Cap. Higazy
+Av. Fatima @ Av. Cap. Higazy
+Av. Fatima @ Quirusillas
+Av. Fátima @ Calle Dario Leigue Sanguino
+Av. Escuadron Velasco @ Colegio Virgen de Fatima
+Av. Escuadron Velasco @ 3er anillo externo
+Av. Escuadron Velasco @ 3er anillo Interno
+3er Anillo Interno @ Cancha Royal
+3er Anillo interno @ Plaza Oruro
+Doble Via a La Guardia @ 3er anillo interno
+Doble Via a La Guardia @ PERNO CENTRO
+Doble Via a La Guardia @ Entrada a Urbari
+Doble Via a La Guardia @ Multipartes Santa Cruz
+Av. Doble Via a La Guardia @ 2do Anillo
+2do Anillo @ Av. Grigota
+Av. Grigota @ Mercado La Ramada
+Av. Grigota @ Mercado La Ramada
+Av. Grigota @ Comercial Grigota
+Av. Omar Chavez @ Comercial Grigota
+Av. Omar Chavez @ Comercial Grigota
+1er Anillo @ Ex-Terminal
+1er Anillo @ Monseñor Salvatierra
+Calle Mercado @ 1er Anillo
+Calle Mercado @ Calle Isoso
+Calle Mercado @ Calle Vallegrande
+Calle Mercado @ Calle Colon
+Calle Mercado @ Calle Velasco
+Calle Mercado @ Calle Independencia
+Calle Republiquetas @ Calle Rene Moreno
+Calle Republiquetas @ Calle Chuquisaca
+Calle Republiquetas @ Calle La Paz
+Calle Republiquetas @ Calle Cochabamba
+Calle Potosi @ Calle Republiquetas
+Calle Potosi @ Calle Warnes
+Calle Potosi @ Calle Ñuflo de Chavez
+Calle Potosi @ Museo de Arte Contemporaneo
+Calle Quijarro @ Calle Bolivar
+Calle Quijarro @ Calle Arenales
+Arenales @ Quijarro
+Calle Arenales @ Calle Campero
+Calle Arenales @ Calle Avaroa
+Calle Arenales @ Plaza Cementerio General
+1er Anillo @ Plaza Cementerio General
+1er Anillo @ Calle Sucre
+Av. Melchor Pinto @ 1er anillo
+Av. Melchor Pinto @ Calle Oliden
+Av. Melchor Pinto @ Calle P. Joaquin Velasco
+Av. Melchor Pinto @ 2do anillo
+Av. Virgen de Cotoca @ 2do anillo
+Av. Virgen de Cotoca @ Calle Cañada Larga
+Av. Virgen de Cotoca @ Calle Fernando Paticu
+Av. Virgen de Cotoca @ 3er Anillo interno
+Av. Virgen de Cotoca @ 3er Anillo
+Av. Virgen de Cotoca @ I
+Av. Virgen de Cotoca @ Aserradero La Chonta
+Av. Virgen de Cotoca @ 4to Anillo
+Av. Virgen de Cotoca @ 4to Anillo
+Av. Virgen de Cotoca @ Ceramica Santa Cruz
+Av. Virgen de Cotoca @ HomeCenter
+Av. Virgen de Cotoca @ E.S. Genex Guaracachi
+Av. Virgen de Cotoca @ CONSER
+Av. Virgen de Cotoca @ Pasarela Las Lomas
+Av. Virgen de Cotoca @ ALBO
+Av. Virgen de Cotoca @ FELCC Pampa de la Isla
+Av. Virgen de Cotoca @ Capilla San Lorenzo
+Av. Virgen de Cotoca @ 6to anillo
+Av. Virgen de Cotoca @ E.S. La Pascana
+E.S. La Pascana @ Av. Virgen de Cotoca
+Calle de Barrio España @ I
+Calle de Barrio España @ II
+Calle de Barrio España @ III
+Calle de Barrio España @ IV
+Calle Sevilla @ V
+Calle de Barrio @ VI
+Calle de Barrio @ El Trillo
+Calle de Barrio @ VII
+Canal Guapilo @ VI
+Canal Guapilo @ Mercado Modelo San Jorge
+Canal Guapilo @ VII
+Canal Guapilo @ Mercado 7 de Abril
+Av. Internacional @ III
+Av. Internacional @ II
+Av. Internacional @ I
+Av. Internacional @ Surtidor El Panal
+Av. Los Andes @ Av. Internacional
+Av. Los Andes @ III
+Av. Los Andes @ II
+Av. Los Andes @ I
+Parada Final Linea 1 ESTE
+Av. Los Andes @ I
+Av. Los Andes @ II
+Av. Los Andes @ III
+Av. Los Andes @ Av. Internacional
+Av. Internacional @ Surtidor El Panal
+Av. Internacional @ I
+Av. Internacional @ II
+Av. Internacional @ III
+Av. Internacional @ Mercado 7 de Abril
+Canal Guapilo @ Mercado 7 de Abril
+Canal Guapilo @ VII
+Canal Guapilo @ Mercado Modelo San Jorge
+Canal Guapilo @ Mercado Modelo San Jorge
+Canal Guapilo @ VI
+Calle de Barrio @ VII
+Calle de Barrio @ El Trillo
+Calle de Barrio @ VI
+Calle Sevilla @ V
+Calle de Barrio España @ IV
+Calle de Barrio España @ III
+Calle de Barrio España @ II
+Calle de Barrio España @ I
+E.S. La Pascana @ Av. Virgen de Cotoca
+Av. Virgen de Cotoca @ zona Colegio Pedro Añez Pedraza
+Av. Virgen de Cotoca @ Colegio Part. Urubo
+Av. Virgen de Cotoca @ Av. Montecristo
+Av. Virgen de Cotoca @ Av. Montecristo
+Av. Virgen de Cotoca @ Colegio Part. Urubo
+Av. Virgen de Cotoca @ zona Colegio Pedro Añez Pedraza
+Av. Virgen de Cotoca @ Monica Semillas
+Av. Virgen de Cotoca @ 6to anillo
+Av. Virgen de Cotoca @ Cancha Matadero Municipal
+Av. Virgen de Cotoca @ FELCC Pampa de la Isla
+Av. Virgen de Cotoca @ ALBO
+Av. Virgen de Cotoca @ Pasarela Las Lomas
+Av. Virgen de Cotoca @ CONSER
+Av. Virgen de Cotoca @ E.S. Genex Guaracachi
+Av. Virgen de Cotoca @ HomeCenter
+Av. Virgen de Cotoca @ Ceramica Santa Cruz
+Av. Virgen de Cotoca @ 4to Anillo
+Av. Virgen de Cotoca @ 4to anillo
+Av. Virgen de Cotoca @ Aserradero La Chonta
+Av. Virgen de Cotoca @ I
+Av. Virgen de Cotoca @ 3er anillo
+Av. Virgen de Cotoca @ 3er Anillo interno
+Av. Virgen de Cotoca @ Calle Mores
+Av. Virgen de Cotoca @ Calle Cañada Larga
+Av. Virgen de Cotoca @ 2do anillo
+Av. Melchor Pinto @ 2do anillo
+Av. Melchor Pinto @ Calle P. Joaquin Velasco
+Calle P. Joaquin Velasco @ Calle Arenales
+Calle P. Joaquin Velasco @ Calle Charcas
+Calle Charcas @ 8va Division
+Calle Charcas @ 1er anillo
+Calle Charcas @ 1er anillo
+Calle Charcas @ Calle Barron
+Calle Charcas @ Calle Avaroa
+Calle Charcas @ Calle Campero
+Calle Charcas @ Calle Quijarro
+Calle Charcas @ Calle Aroma
+Calle Charcas @ Calle Murillo
+Calle Charcas @ Iglesia San Andres
+Calle Buenos Aires @ Calle 24 de Septiembre
+Calle Buenos Aires @ Calle Libertad
+Calle Buenos Aires @ Calle 21 de Mayo
+Calle Buenos Aires @ Calle España
+Calle Buenos Aires @ Hospital de Niños Mario Ortiz
+Calle Buenos Aires @ Mercado Florida
+Calle Buenos Aires @ 1er Anillo
+1er Anillo @ Calle Florida
+1er Anillo @ Av. Landivar
+1er Anillo @ Av. Landivar
+1er Anillo @ Calle Ingavi
+1er Anillo @ Calle Suarez de Figueroa
+1er Anillo @ Calle Isabel La Catolica
+1er Anillo @ Hotel Surutú
+1er Anillo @ Ex-Terminal
+Av. Grigota @ Comercial Grigota
+Av. Grigota @ Mercado La Ramada
+Av. Grigota @ Mercado La Ramada
+Av. Grigota @ 2do Anillo
+Doble Via a La Guardia @ 2do Anillo
+Doble Via a La Guardia @ Multipartes Santa Cruz
+Doble Via a La Guardia @ Entrada a Urbari
+Doble Via a La Guardia @ PERNO CENTRO
+Doble Via a La Guardia @ 3er anillo interno
+Doble Via a La Guardia @ 3er anillo interno
+3er anillo externo @ Doble Via a La Guardia
+3er anillo interno @ Tristan Roca
+3er anillo Interno @ Cancha Royal
+Av. Escuadron Velasco @ 3er anillo externo
+Av Escuadron Velasco @ Clinica Policial Copacabana
+Av. Fátima @ Calle Dario Leigue Sanguino
+Av. Fatima @ Quirusillas
+Av. Fatima @ Av. Cap. Higazy
+Av. Fatima @ Av. Cap. Higazy
+4to anillo @ Av. Fatima
+4to Anillo @ Zona Cementerio La Cuchilla
+Av. Moscú @ Cementerio La Cuchilla
+Av. Moscú @ Calle Hugo Babranco
+Av. Moscú @ zona Calle Dinamarca
+Av. Moscú @ Av. 6 de agosto
+Mercado La Cuchilla
+Av. Moscú @ 5to Anillo
+Av. Moscú @ 5to Anillo
+Av. Maria Auxiliadora @ Av. Jerusalen
+Av. Maria Auxiliadora @ Calle 8 de Octubre
+Av. Maria Auxiliadora @ I
+Iglesia Don Bosco Sur @ Av. Petrolera
+Av. Domingo Savio @ Colegio Don Bosco Miguel Magone
+Av. Domingo Savio @ I
+Av. Domingo Savio @ 6to anillo
+6to anillo @ Calle Primavera
+6to Anillo @ Calle 3 Oeste
+Calle 20 de Enero @ U.E. Universitario Sur
+Calle 20 de Enero @ Calle Franco de Goya
+Av. Pedro Casals @ Hogar Barrio Juvenil
+Calle Baldomero @ Parque Urbano los Penocos
+Av. Jesus de Nazareth @ Parque Urbano los Penocos
+Calle Rosas de Saron @ I
+7mo anillo @ Calle Rosas de Saron
+7mo anillo @ Calle Los Sauces
+7mo Anillo @ V
+Av. Miguel de Cervantes @ 7mo anillo
+Av. Miguel de Cervantes @ Mercado El Paraiso
+Av. Los Pinos @ Av. Miguel de Cervantes
+Av. Los Pinos @ Calle Sirari
+Av. Los Pinos @ Plazuela Urb. Toborochi
+Calle Los Ceibos @ Plazuela Urb. Toborochi
+Calle El Nogal @ Calle Los Sauces
