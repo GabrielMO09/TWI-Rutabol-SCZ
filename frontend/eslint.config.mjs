@@ -13,6 +13,14 @@ const eslintConfig = defineConfig([
     "build/**",
     "next-env.d.ts",
   ]),
+  // shortcut: reglas nuevas de React Compiler (pureza, refs, setState en efectos) en codigo ya existente; avisos hasta refactorizar store.tsx y las paginas afectadas.
+  {
+    rules: {
+      "react-hooks/purity": "warn",
+      "react-hooks/refs": "warn",
+      "react-hooks/set-state-in-effect": "warn",
+    },
+  },
 ]);
 
 export default eslintConfig;
