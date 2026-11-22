@@ -116,27 +116,37 @@ describe('MicrosService', () => {
     context.micros.resolveEmergency('17-045', driver);
     expect(context.micros.world().alerts).toEqual([
       expect.objectContaining({ kind: 'aforo', busId: '17-078' }),
+      // El chofer receptor es avisado del traspaso sin aprobación previa.
+      expect.objectContaining({ busId: '17-078', message: expect.stringContaining('Traspaso recibido') }),
     ]);
   });
 
-  it('mantiene el traslado por descanso y no filtra su liquidación al mundo público', () => {
-    const result = context.micros.restTransfer('17-045', {
+  it('mantiene el traslado por descanso y no filtra su liquidación al mundo público', async () => {
+    expect(() => context.micros.restTransfer('17-045', { toId: '11-099', creditedTo: 'saliente' }, driver))
+      .toThrow('misma línea');
+    const rest = `Bearer ${(await context.auth.loginDriver({
+      line: '11', internal: '033', pin: '1234',
+    })).token}`;
+    const result = context.micros.restTransfer('11-033', {
       toId: '11-099', creditedTo: 'saliente',
-    }, driver);
-    expect(result).toMatchObject({ passengers: 12, amount: 42, creditedTo: 'saliente' });
+    }, rest);
+    expect(result).toMatchObject({ passengers: 6, amount: 21, creditedTo: 'saliente' });
     expect(context.memory.ledger).toEqual([result]);
     expect(context.micros.world()).not.toHaveProperty('ledger');
-    expect(context.memory.buses[0].status).toBe('descanso');
-    context.micros.resume('17-045', driver);
-    expect(context.memory.buses[0].status).toBe('activo');
+    const resting = context.memory.buses.find((bus) => bus.id === '11-033')!;
+    expect(resting.status).toBe('descanso');
+    context.micros.resume('11-033', rest);
+    expect(resting.status).toBe('activo');
   });
 
-  it('emite eventos tras comandos y ticks, y limpia el intervalo', () => {
+  it('emite eventos tras comandos y ticks (agrupados cada 300 ms), y limpia el intervalo', async () => {
     const received: unknown[] = [];
     const subscription = context.events.stream.subscribe((event) => received.push(event.data));
     context.micros.disembark('17-045', driver);
     context.memory.tick();
-    expect(received).toEqual([{ type: 'tick' }, { type: 'tick' }]);
+    expect(received).toEqual([]);
+    await new Promise((resolve) => setTimeout(resolve, 400));
+    expect(received).toEqual([{ type: 'tick' }]);
     subscription.unsubscribe();
     jest.useFakeTimers();
     try {

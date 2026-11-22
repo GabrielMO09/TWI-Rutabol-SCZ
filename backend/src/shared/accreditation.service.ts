@@ -4,12 +4,26 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import { InstitutionsService } from '../institutions/institutions.service';
 import { MemoryService } from '../micros/memory.service';
-import type { Accreditation, Category, Profile } from '../micros/models';
+import type { Accreditation, Profile } from '../micros/models';
 import { objectBody, requiredText, text } from '../micros/input';
 import { AuditService } from './audit.service';
 import { NotificationsService } from './notifications.service';
-import { matchesCode, randomCode } from './security';
+import { exposeDevCode, matchesCode, randomCode } from './security';
+
+export const ACCOUNT_CONFLICT = 'Ya existe una cuenta con esos datos de identificación.';
+
+export function registrationEmail(value: unknown): string {
+  const email = requiredText(value, 'El correo electrónico', 5, 254).toLowerCase();
+  if (!/^[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*@(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,63}$/.test(email) ||
+    email.split('@')[0].length > 64) {
+    throw new BadRequestException('Ingresa un correo electrónico válido.');
+  }
+  return email;
+}
+
+type RequestFields = Pick<Accreditation, 'type' | 'institution' | 'institutionId' | 'code' | 'institutionalCode'>;
 
 @Injectable()
 export class AccreditationService {
@@ -17,32 +31,50 @@ export class AccreditationService {
     private readonly memory: MemoryService,
     private readonly audit: AuditService,
     private readonly notifications: NotificationsService,
+    private readonly institutions: InstitutionsService,
   ) {}
 
-  validateCode(category: Category, code: string, exceptUserId?: string): void {
-    if (category === 'universitario' && !/^[^@\s]+@upds\.edu\.bo$/i.test(code)) {
-      throw new BadRequestException('Usa tu correo institucional @upds.edu.bo.');
+  prepareRequest(type: Accreditation['type'], input: unknown, exceptUserId?: string): RequestFields {
+    const body = objectBody(input);
+    const institution = this.institutions.resolve(
+      body.institution, type === 'escolar' ? 'colegio' : 'universidad',
+    );
+    const code = type === 'universitario'
+      ? registrationEmail(body.code) : requiredText(body.code, 'El código RUDE', 8, 20);
+    if (type === 'escolar' && !/^[A-Za-z0-9]{8,20}$/.test(code)) {
+      throw new BadRequestException('El código RUDE debe tener entre 8 y 20 caracteres alfanuméricos.');
     }
-    if (category === 'escolar' && !/^[A-Za-z0-9]{8,20}$/.test(code)) {
-      throw new BadRequestException('El código RUDE debe tener entre 8 y 20 caracteres.');
+    if (type === 'universitario' &&
+      (!institution.emailDomain || code.split('@')[1] !== institution.emailDomain)) {
+      throw new BadRequestException(institution.emailDomain
+        ? `Usa tu correo institucional @${institution.emailDomain}.`
+        : 'La universidad seleccionada no tiene un dominio de correo configurado.');
     }
-    if (category === 'general' && !/^[A-Za-z0-9]{5,30}$/.test(code)) {
-      throw new BadRequestException('Ingresa un número de CI válido.');
-    }
+    const institutionalCode = type === 'universitario'
+      ? requiredText(body.institutionalCode, 'El código institucional', 1, 70) : undefined;
+
     const normalized = code.toLowerCase();
     if (
-      [...this.memory.users.values()].some(
-        ({ profile }) =>
-          profile.userId !== exceptUserId &&
-          (profile.code?.toLowerCase() === normalized ||
-            profile.userId.toLowerCase() === normalized),
+      [...this.memory.users.values()].some(({ profile }) =>
+        profile.userId !== exceptUserId &&
+        (profile.code?.toLowerCase() === normalized ||
+          profile.userId.toLowerCase() === normalized ||
+          profile.email?.toLowerCase() === normalized),
       ) ||
-      this.memory.accreditations.some(
-        (item) => item.userId !== exceptUserId && item.code.toLowerCase() === normalized,
+      this.memory.accreditations.some((item) =>
+        item.userId !== exceptUserId &&
+        (item.code.toLowerCase() === normalized ||
+          (institutionalCode !== undefined &&
+            item.institutionId === institution.id &&
+            (item.institutionalCode ?? item.code) === institutionalCode)),
       )
     ) {
-      throw new ConflictException('Ya existe una cuenta con ese identificador.');
+      throw new ConflictException(ACCOUNT_CONFLICT);
     }
+
+    return {
+      type, institution: institution.name, institutionId: institution.id, code, institutionalCode,
+    };
   }
 
   effective(item: Accreditation): Accreditation {
@@ -84,28 +116,26 @@ export class AccreditationService {
     return 'Tarifa general';
   }
 
-  request(userId: string, input: unknown): {
-    accreditation: Accreditation;
-    devCode?: string;
-  } {
+  request(userId: string, input: unknown) {
     const user = this.memory.users.get(userId);
     if (!user) throw new NotFoundException('Usuario no encontrado.');
     const type = user.profile.category;
     if (type !== 'escolar' && type !== 'universitario') {
       throw new BadRequestException('Tu categoría no requiere acreditación.');
     }
-    const body = objectBody(input);
-    const institution = requiredText(body.institution, 'La institución', 2, 200);
-    const code = requiredText(body.code, 'El identificador', 1, 200);
-    this.validateCode(type, code, userId);
+    return this.startRequest(userId, this.prepareRequest(type, input, userId));
+  }
+
+  startRequest(userId: string, fields: RequestFields): {
+    accreditation: Accreditation;
+    devCode?: string;
+  } {
     const accreditation: Accreditation = {
+      ...fields,
       id: this.memory.nextId('AC'),
       userId,
-      type,
-      institution,
-      code,
       status: 'pendiente',
-      emailVerified: type === 'escolar',
+      emailVerified: fields.type === 'escolar',
       requestedAt: Date.now(),
     };
     const index = this.memory.accreditations.findIndex((item) => item.userId === userId);
@@ -113,7 +143,7 @@ export class AccreditationService {
     else this.memory.accreditations.push(accreditation);
     this.memory.emailCodes.delete(userId);
     let devCode: string | undefined;
-    if (type === 'universitario') {
+    if (fields.type === 'universitario') {
       devCode = randomCode();
       this.memory.emailCodes.set(userId, {
         code: devCode,
@@ -122,7 +152,7 @@ export class AccreditationService {
       });
     }
     this.memory.events.emit();
-    return { accreditation: { ...accreditation }, ...(devCode ? { devCode } : {}) };
+    return { accreditation: { ...accreditation }, ...(devCode && exposeDevCode() ? { devCode } : {}) };
   }
 
   confirmEmail(userId: string, input: unknown): Accreditation {

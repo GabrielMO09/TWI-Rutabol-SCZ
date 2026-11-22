@@ -19,7 +19,7 @@ describe('Acreditación y tarifas', () => {
   it('exige correo confirmado antes de aprobar y aplica vigencia de 180 días', () => {
     const userId = 'lucia.vaca@upds.edu.bo';
     const request = context.accreditation.request(userId, {
-      institution: 'UPDS', code: userId,
+      institution: 'UPDS', code: userId, institutionalCode: 'MAT-101',
     });
     expect(context.accreditation.profile(userId).fareCategory).toBe('general');
     expect(() => context.accreditation.decision(actor, request.accreditation.id, {
@@ -48,8 +48,22 @@ describe('Acreditación y tarifas', () => {
 
   it('rechaza códigos duplicados de otro usuario', () => {
     expect(() => context.accreditation.request('lucia.vaca@upds.edu.bo', {
-      institution: 'UPDS', code: 'ESTUDIANTE@upds.edu.bo',
-    })).toThrow('Ya existe una cuenta con ese identificador.');
+      institution: 'UPDS', code: 'ESTUDIANTE@upds.edu.bo', institutionalCode: 'MAT-101',
+    })).toThrow('Ya existe una cuenta con esos datos de identificación.');
+  });
+
+  it('usa el dominio de la institución elegida y rechaza subdominios', async () => {
+    const item = await context.institutions.create(actor, {
+      name: 'Universidad de prueba', type: 'universidad', emailDomain: 'prueba.edu.bo',
+    });
+    const userId = 'lucia.vaca@upds.edu.bo';
+    const input = { institution: item.id, institutionalCode: 'MAT-101' };
+    expect(() => context.accreditation.request(userId, { ...input, code: userId }))
+      .toThrow('Usa tu correo institucional @prueba.edu.bo.');
+    expect(() => context.accreditation.request(userId, { ...input, code: 'lucia@mail.prueba.edu.bo' }))
+      .toThrow('Usa tu correo institucional @prueba.edu.bo.');
+    expect(context.accreditation.request(userId, { ...input, code: 'lucia@prueba.edu.bo' }).accreditation)
+      .toMatchObject({ institutionId: item.id, code: 'lucia@prueba.edu.bo', emailVerified: false });
   });
 
   it('actualiza tarifas e historial sin mutar entradas anteriores', () => {

@@ -24,6 +24,7 @@ const config: Config = {
     'apps/**/*.(t|j)s',
   ],
   coverageDirectory: './coverage',
+  setupFiles: ['<rootDir>/test/env.ts'],
   testEnvironment: 'node',
 };
 

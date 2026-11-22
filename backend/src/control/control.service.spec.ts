@@ -72,7 +72,7 @@ describe('Centro de Control', () => {
     const driver = `Bearer ${(await context.auth.loginDriver({
       line: '17', internal: '100', pin: '4321',
     })).token}`;
-    context.ops.setJornada(true, driver);
+    context.ops.setJornada(true, driver, { lat: -17.78, lng: -63.18 });
     context.memory.tick();
     expect(context.memory.buses.find((item) => item.id === bus.id)!.progress).toBeCloseTo(0.003);
     context.control.updateBus(actor, bus.id, { active: false });
@@ -109,7 +109,9 @@ describe('Centro de Control', () => {
     const passenger = `Bearer ${(await context.auth.loginPassenger({
       id: '7654321', password: '123456',
     })).token}`;
-    context.ops.cash('17-045', { category: 'escolar' }, driver);
+    context.ops.cash('17-045', {
+      category: 'escolar', token: context.credentials.issue('rude80480123').token,
+    }, driver);
     context.micros.createTicket({ busId: '17-045', idempotencyKey: 'reporte' }, passenger);
     const json = context.reports.report({ format: 'json', from: '0', line: '17' });
     expect(json.format).toBe('json');

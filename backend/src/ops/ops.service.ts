@@ -2,6 +2,7 @@ import {
   BadRequestException, Injectable, NotFoundException,
 } from '@nestjs/common';
 import { AuthService } from '../auth/auth.service';
+import { CredentialsService } from '../credentials/credentials.service';
 import { MemoryService } from '../micros/memory.service';
 import type { Bus, Incident, Profile, Ticket } from '../micros/models';
 import { objectBody, requiredText } from '../micros/input';
@@ -19,6 +20,7 @@ export class OpsService {
     private readonly audit: AuditService,
     private readonly fares: FaresService,
     private readonly notifications: NotificationsService,
+    private readonly credentials: CredentialsService,
   ) {}
 
   private bus(id: string): Bus {
@@ -47,17 +49,22 @@ export class OpsService {
     };
   }
 
-  setJornada(onDuty: boolean, authorization?: string) {
+  setJornada(onDuty: boolean, authorization?: string, input?: unknown) {
     const { profile, bus } = this.driver(authorization);
     if (onDuty && (!bus.active ||
       !this.memory.lines.some((line) => line.id === bus.line && line.active))) {
       throw new BadRequestException('La unidad o su línea está inactiva.');
     }
+    // RF-15: iniciar jornada exige una posición GPS válida del conductor.
+    const gps = onDuty && !bus.onDuty ? this.startPosition(input) : undefined;
     if (bus.onDuty !== onDuty) {
       bus.onDuty = onDuty;
-      if (onDuty) {
+      if (gps) {
         bus.startedAt = Date.now();
-        if (bus.source === 'simulado') bus.lastSeen = Date.now();
+        bus.source = 'gps';
+        bus.pos = gps;
+        bus.lastSeen = Date.now();
+        bus.stale = false;
       }
       this.memory.refreshBus(bus);
       this.audit.log(profile, onDuty ? 'jornada.iniciar' : 'jornada.finalizar',
@@ -65,6 +72,14 @@ export class OpsService {
       this.memory.events.emit();
     }
     return this.jornada(authorization);
+  }
+
+  private startPosition(input: unknown): [number, number] {
+    const body = input === undefined ? {} : objectBody(input);
+    if (body.lat === undefined || body.lng === undefined) {
+      throw new BadRequestException('Activa el GPS: se necesita tu posición para iniciar la jornada.');
+    }
+    return position(body.lat, body.lng);
   }
 
   location(id: string, input: unknown, authorization?: string): Bus {
@@ -107,7 +122,7 @@ export class OpsService {
     const { profile, bus } = this.driver(authorization, id);
     try {
       const body = objectBody(input);
-      const occupancy = integer(body.occupancy, 0, 60, 'La ocupación');
+      const occupancy = integer(body.occupancy, 0, bus.max, 'La ocupación (máximo el aforo de la unidad)');
       const reason = requiredText(body.reason, 'El motivo', 5, 1000);
       changeOccupancy(this.memory, bus, occupancy, 'correccion', profile.userId, reason);
       this.audit.log(profile, 'ocupacion.corregir', id, 'ok', `${occupancy}: ${reason}`);
@@ -128,6 +143,16 @@ export class OpsService {
         throw new BadRequestException('Selecciona una categoría válida.');
       }
       this.operational(bus);
+      // RN-03/RN-04: un beneficio solo se concede con credencial vigente y acreditación aprobada.
+      let fareReason = 'Tarifa general en efectivo';
+      if (category !== 'general') {
+        const proof = this.credentials.verify({ token: objectBody(input).token });
+        if (!proof.valid || proof.fareCategory !== category) {
+          throw new BadRequestException(
+            'La tarifa preferencial exige la credencial QR vigente de un pasajero con acreditación aprobada.');
+        }
+        fareReason = 'Tarifa en efectivo con credencial acreditada';
+      }
       const pending = this.memory.reqs.filter((item) => item.busId === id).length;
       if (bus.occupancy + pending >= bus.max) {
         throw new BadRequestException('La unidad está llena. Elige otro micro.');
@@ -135,7 +160,7 @@ export class OpsService {
       const ticket: Ticket = {
         id: this.memory.nextId('T'), busId: id, line: bus.line, internal: bus.internal,
         fare: this.fares.amount(category), category,
-        fareReason: 'Tarifa en efectivo según categoría declarada',
+        fareReason,
         method: 'Efectivo', at: Date.now(), status: 'abordado',
         receiptNo: this.memory.nextReceipt(),
       };

@@ -4,10 +4,15 @@ import {
   Delete,
   Get,
   Headers,
+  Ip,
   Param,
   Patch,
   Post,
+  Res,
 } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
+import type { Response } from 'express';
+import { setSessionCookie } from '../shared/session-cookie';
 import { AuthService } from './auth.service';
 
 @Controller('api/auth')
@@ -15,23 +20,50 @@ export class AuthController {
   constructor(private readonly auth: AuthService) {}
 
   @Post('register')
-  register(@Body() body: unknown) {
-    return this.auth.register(body);
+  @Throttle({ default: { limit: 10, ttl: 3_600_000 } })
+  async register(@Body() body: unknown, @Res({ passthrough: true }) response: Response) {
+    const { token, profile, devCode } = await this.auth.register(body);
+    setSessionCookie(response, token);
+    return { profile, ...(devCode === undefined ? {} : { devCode }) };
   }
 
   @Post('login/passenger')
-  loginPassenger(@Body() body: unknown) {
-    return this.auth.loginPassenger(body);
+  async loginPassenger(
+    @Body() body: unknown,
+    @Res({ passthrough: true }) response: Response,
+    @Ip() ip: string,
+    @Headers('authorization') authorization?: string,
+    @Headers('cookie') cookie?: string,
+  ) {
+    const { token, profile } = await this.auth.loginPassenger(body, ip, authorization, cookie);
+    setSessionCookie(response, token);
+    return { profile };
   }
 
   @Post('login/driver')
-  loginDriver(@Body() body: unknown) {
-    return this.auth.loginDriver(body);
+  async loginDriver(
+    @Body() body: unknown,
+    @Res({ passthrough: true }) response: Response,
+    @Ip() ip: string,
+    @Headers('authorization') authorization?: string,
+    @Headers('cookie') cookie?: string,
+  ) {
+    const { token, profile } = await this.auth.loginDriver(body, ip, authorization, cookie);
+    setSessionCookie(response, token);
+    return { profile };
   }
 
   @Post('login/control')
-  loginControl(@Body() body: unknown) {
-    return this.auth.loginControl(body);
+  async loginControl(
+    @Body() body: unknown,
+    @Res({ passthrough: true }) response: Response,
+    @Ip() ip: string,
+    @Headers('authorization') authorization?: string,
+    @Headers('cookie') cookie?: string,
+  ) {
+    const { token, profile } = await this.auth.loginControl(body, ip, authorization, cookie);
+    setSessionCookie(response, token);
+    return { profile };
   }
 
   @Get('me')
@@ -40,12 +72,21 @@ export class AuthController {
   }
 
   @Post('refresh')
-  refresh(@Headers('authorization') authorization?: string) {
-    return this.auth.refresh(authorization);
+  refresh(
+    @Res({ passthrough: true }) response: Response,
+    @Headers('authorization') authorization?: string,
+  ) {
+    const { token, profile } = this.auth.refresh(authorization);
+    setSessionCookie(response, token);
+    return { profile };
   }
 
   @Post('logout')
-  logout(@Headers('authorization') authorization?: string) {
+  logout(
+    @Res({ passthrough: true }) response: Response,
+    @Headers('authorization') authorization?: string,
+  ) {
+    setSessionCookie(response);
     return this.auth.logout(authorization);
   }
 

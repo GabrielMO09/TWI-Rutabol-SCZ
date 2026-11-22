@@ -52,10 +52,14 @@ describe('AuthService', () => {
     const body = {
       name: 'Ana Pérez',
       category: 'universitario',
-      code: 'ANA@upds.edu.bo',
-      password: '123456',
-      photo: 'foto',
-      institution: 'UPDS',
+      ci: '8154321-1A',
+      email: 'ANA@upds.edu.bo',
+      phone: '+591 71234567',
+      institutionalCode: 'MAT-123',
+      password: 'clave-Ana42',
+      passwordConfirmation: 'clave-Ana42',
+      photo: 'data:image/jpeg;base64,/9j/2Q==',
+      institution: context.institutions.resolve('UPDS', 'universidad').id,
     };
     await expect(context.auth.register(body)).rejects.toThrow(
       'Debes aceptar los términos y la política de privacidad.',
@@ -63,12 +67,36 @@ describe('AuthService', () => {
     const result = await context.auth.register({ ...body, acceptTerms: true });
     expect(result.devCode).toMatch(/^\d{6}$/);
     expect(result.profile).toMatchObject({
+      ci: '8154321-1A', email: 'ana@upds.edu.bo', phone: '+59171234567',
       fareCategory: 'general',
-      accreditation: { status: 'pendiente', emailVerified: false },
+      accreditation: {
+        institutionId: body.institution, institutionalCode: 'MAT-123',
+        status: 'pendiente', emailVerified: false,
+      },
     });
     await expect(context.auth.register({
-      ...body, code: 'ana@upds.edu.bo', acceptTerms: true,
+      ...body, ci: '8154322', email: 'ana@upds.edu.bo', acceptTerms: true,
     })).rejects.toMatchObject({ status: 409 });
+  });
+
+  it('valida los datos del registro y devuelve el mismo conflicto para CI y correo duplicados', async () => {
+    const body = {
+      name: 'Ana Pérez', category: 'general', ci: '8154321', email: 'ana@example.com',
+      phone: '71234567', password: 'clave-Ana42', passwordConfirmation: 'clave-Ana42',
+      photo: 'data:image/jpeg;base64,/9j/2Q==', acceptTerms: true,
+    };
+    for (const fields of [
+      { ci: 'abc' }, { email: 'ana@' }, { phone: '+54 71234567' },
+      { passwordConfirmation: 'no coincide' },
+    ]) {
+      await expect(context.auth.register({ ...body, ...fields })).rejects.toMatchObject({ status: 400 });
+    }
+    await context.auth.register(body);
+    const conflict = { status: 409, message: 'Ya existe una cuenta con esos datos de identificación.' };
+    await expect(context.auth.register({ ...body, email: 'otra@example.com' }))
+      .rejects.toMatchObject(conflict);
+    await expect(context.auth.register({ ...body, ci: '8154322', email: 'ANA@EXAMPLE.COM' }))
+      .rejects.toMatchObject(conflict);
   });
 
   it('rota, lista, revoca y expira sesiones a las ocho horas', async () => {
@@ -82,7 +110,7 @@ describe('AuthService', () => {
     expect(() => context.auth.resolve(bearer)).toThrow(UnauthorizedException);
     const nextBearer = `Bearer ${refreshed.token}`;
     const current = context.auth.sessions(nextBearer)[0];
-    context.auth.revokeSession(current.id, nextBearer);
+    await context.auth.revokeSession(current.id, nextBearer);
     expect(() => context.auth.resolve(nextBearer)).toThrow(UnauthorizedException);
 
     const expiring = await context.auth.loginPassenger({ id: '7654321', password: '123456' });
@@ -100,11 +128,10 @@ describe('AuthService', () => {
     });
     expect(() => context.auth.resolve(`Bearer ${login.token}`)).toThrow(UnauthorizedException);
     await expect(context.auth.recoveryConfirm({
-      id: '7654321', code: recovery.devCode, newPassword: 'otra123',
+      id: '7654321', code: recovery.devCode, newPassword: 'otra1234',
     })).rejects.toBeInstanceOf(HttpException);
-    await expect(context.auth.loginPassenger({
-      id: '7654321', password: 'nueva123',
-    })).resolves.toHaveProperty('token');
+    await expect(context.auth.loginPassenger({ id: '7654321', password: 'nueva123' }))
+      .resolves.toHaveProperty('token');
   });
 
   it('actualiza perfil y contraseña sin aceptar cambios de rol', async () => {
@@ -121,9 +148,8 @@ describe('AuthService', () => {
   });
 
   it('audita cada intento de control', async () => {
-    await expect(context.auth.loginControl({
-      id: 'control@rutabol.bo', password: 'incorrecta',
-    })).rejects.toThrow();
+    await expect(context.auth.loginControl({ id: 'control@rutabol.bo', password: 'incorrecta' }))
+      .rejects.toThrow();
     await context.auth.loginControl({ id: 'control@rutabol.bo', password: 'control123' });
     expect(context.memory.audit.map((item) => item.result)).toEqual(['error', 'ok']);
   });

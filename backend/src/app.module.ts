@@ -1,5 +1,10 @@
 import { Module } from '@nestjs/common';
+import { APP_FILTER, APP_GUARD } from '@nestjs/core';
+import { AllExceptionsFilter } from './shared/all-exceptions.filter';
 import { createObserveModule } from '@nestjs/observe';
+import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
+import { DatabaseModule } from './database/database.module';
+import { PersistenceModule } from './persistence/persistence.module';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { AuthModule } from './auth/auth.module';
@@ -19,11 +24,19 @@ export const { ObserveModule, ObserveInstrument } = createObserveModule();
           }),
         ]
       : []),
+    // RNF-04: tope general por IP (el login tiene además su propio limitador). Holgado: el frontend sondea el mundo.
+    ThrottlerModule.forRoot([{ ttl: 60_000, limit: 600 }]),
+    DatabaseModule,
+    PersistenceModule,
     AuthModule,
     MicrosModule,
     RutabolModule,
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [
+    AppService,
+    { provide: APP_GUARD, useClass: ThrottlerGuard },
+    { provide: APP_FILTER, useClass: AllExceptionsFilter },
+  ],
 })
 export class AppModule {}

@@ -1,3 +1,4 @@
+import { randomBytes } from 'node:crypto';
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { AuthService } from '../auth/auth.service';
 import { MemoryService } from './memory.service';
@@ -25,11 +26,11 @@ export class MicrosService {
   ) {}
 
   listMicros(): Bus[] {
-    return this.memory.buses.filter((bus) => bus.active).map((bus) => this.snapshot(bus));
+    return this.memory.buses.filter((bus) => bus.active).map((bus) => this.publicService.publicBus(bus));
   }
 
   findMicroById(id: string): Bus {
-    return this.snapshot(this.bus(id));
+    return this.publicService.publicBus(this.bus(id));
   }
 
   private snapshot(bus: Bus): Bus {
@@ -214,7 +215,7 @@ export class MicrosService {
 
   private transferTickets(fromBus: string, toBus: string, passengers: number): Pass[] {
     const passes: Pass[] = Array.from({ length: passengers }, () => ({
-      id: this.memory.nextId('P'), code: this.memory.nextId('TMP'),
+      id: this.memory.nextId('P'), code: `TMP-${randomBytes(12).toString('hex')}`, // impredecible: el código actúa como credencial
       fromBus, toBus, expires: Date.now() + 3600000,
     }));
     this.memory.passes.push(...passes);
@@ -246,6 +247,7 @@ export class MicrosService {
     if (rescue.id === bus.id) {
       throw new BadRequestException('Selecciona otra unidad de rescate.');
     }
+    this.sameLine(bus, rescue);
     this.available(rescue);
     const capacity = rescue.max - rescue.occupancy - this.pending(rescue.id);
     if (capacity <= 0) throw new BadRequestException('La unidad de rescate no tiene cupo.');
@@ -257,11 +259,27 @@ export class MicrosService {
       actor.userId, `Traspaso desde ${bus.id}`);
     const passes = this.transferTickets(bus.id, rescue.id, passengers);
     this.audit.log(actor, 'emergencia.traspasar', id, 'ok',
-      `${passengers} pasajeros a ${rescue.id}.`);
+      `origen=${bus.id}; destino=${rescue.id}; pasajeros=${passengers}.`);
+    this.alertReceiver(rescue.id, bus.id, passengers);
     this.memory.events.emit();
     return {
       passengers, fromBus: this.snapshot(bus), toBus: this.snapshot(rescue), passes,
     };
+  }
+
+  /** RF-17: el traspaso solo es válido hacia una unidad de la misma línea (no hay otra autorización). */
+  private sameLine(from: Bus, to: Bus): void {
+    if (from.line !== to.line) {
+      throw new BadRequestException('La unidad receptora debe pertenecer a la misma línea.');
+    }
+  }
+
+  /** Avisa al chofer receptor (ve las alertas de su unidad) sin exigir su aprobación previa. */
+  private alertReceiver(toBus: string, fromBus: string, passengers: number): void {
+    this.memory.alerts.push({
+      id: this.memory.nextId('A'), busId: toBus, at: Date.now(), kind: 'emergencia',
+      message: `Traspaso recibido: ${passengers} pasajeros desde la unidad ${fromBus}.`,
+    });
   }
 
   restTransfer(id: string, input: unknown, authorization?: string): LedgerEntry {
@@ -271,6 +289,7 @@ export class MicrosService {
     const body = objectBody(input);
     const outgoing = this.bus(text(body.toId));
     if (outgoing.id === bus.id) throw new BadRequestException('Selecciona otra unidad saliente.');
+    this.sameLine(bus, outgoing);
     this.available(outgoing);
     if (body.creditedTo !== 'descanso' && body.creditedTo !== 'saliente') {
       throw new BadRequestException('Selecciona el destino del cobro.');
@@ -291,7 +310,8 @@ export class MicrosService {
     };
     this.memory.ledger.push(entry);
     this.audit.log(actor, 'descanso.traspasar', id, 'ok',
-      `${passengers} pasajeros a ${outgoing.id}; cobro a ${body.creditedTo}.`);
+      `origen=${bus.id}; destino=${outgoing.id}; pasajeros=${passengers}; cobro a ${body.creditedTo}.`);
+    this.alertReceiver(outgoing.id, bus.id, passengers);
     this.memory.events.emit();
     return { ...entry };
   }

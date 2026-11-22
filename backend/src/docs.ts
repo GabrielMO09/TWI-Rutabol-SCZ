@@ -34,7 +34,7 @@ export const ROUTES = [
   ['POST', '/api/wallet/link-physical', 'pasajero'],
   ['POST', '/api/tickets', 'pasajero'],
   ['GET', '/api/tickets/me', 'pasajero'],
-  ['GET', '/api/credentials/me', 'pasajero'],
+  ['POST', '/api/credentials/me', 'pasajero'],
   ['POST', '/api/credentials/verify', 'chofer'],
   ['POST', '/api/jornada/start', 'chofer'],
   ['POST', '/api/jornada/end', 'chofer'],

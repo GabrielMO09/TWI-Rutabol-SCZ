@@ -3,6 +3,7 @@ import {
   Body,
   Controller,
   Get,
+  Ip,
   Param,
   Patch,
   Post,
@@ -51,8 +52,8 @@ export class PublicController {
   }
 
   @Sse('events')
-  stream(): Observable<MessageEvent> {
-    return this.events.stream;
+  stream(@Ip() ip = 'local'): Observable<MessageEvent> {
+    return this.events.connect(ip);
   }
 }
 
@@ -110,7 +111,7 @@ export class PassengerController {
     return this.wallet.linkPhysical(request.profile.userId, body);
   }
 
-  @Get('credentials/me')
+  @Post('credentials/me')
   credential(@Req() request: AuthRequest) {
     return this.credentials.issue(request.profile.userId);
   }

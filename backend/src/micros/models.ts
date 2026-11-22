@@ -7,6 +7,8 @@ export interface Accreditation {
   userId: string;
   type: Exclude<Category, 'general'>;
   institution: string;
+  institutionId?: string;
+  institutionalCode?: string;
   code: string;
   status: 'pendiente' | 'aprobada' | 'observada' | 'rechazada' | 'vencida';
   emailVerified: boolean;
@@ -22,6 +24,10 @@ export interface Profile {
   name: string;
   category?: Category;
   code?: string;
+  ci?: string;
+  email?: string;
+  phone?: string;
+  acceptedTermsAt?: number;
   photo?: string;
   line?: string;
   internal?: string;
