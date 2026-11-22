@@ -42,3 +42,6 @@ next-env.d.ts
 
 # copias de seguridad de la base
 /backups/
+
+# registro personal de avances (no se sube)
+avances-rutabol.txt
