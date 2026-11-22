@@ -14,20 +14,35 @@ describe('Credenciales QR', () => {
     jest.restoreAllMocks();
   });
 
-  it('firma el contenido y no incluye el identificador en claro en el payload', () => {
+  it('rechaza cambios en el contenido firmado y acepta la credencial original', () => {
     const issued = context.credentials.issue('7654321');
     const [encoded, signature] = issued.token.split('.');
     const payload = JSON.parse(Buffer.from(encoded, 'base64url').toString('utf8')) as
       Record<string, unknown>;
-    expect(Object.keys(payload).sort()).toEqual(['e', 'n', 'u']);
-    expect(payload).not.toHaveProperty('code');
-    expect(payload).not.toHaveProperty('email');
-    const forged = Buffer.from(JSON.stringify({ ...payload, u: 'otro' })).toString('base64url');
+    const forged = Buffer.from(JSON.stringify({ ...payload, e: issued.expiresAt + 1 }))
+      .toString('base64url');
     expect(context.credentials.verify({ token: `${forged}.${signature}` })).toEqual({
       valid: false, reason: 'Firma inválida.',
     });
     expect(context.credentials.verify({ token: issued.token })).toMatchObject({
       valid: true, fareCategory: 'general', codeMasked: '****4321',
+    });
+  });
+
+  it('incluye solo el nonce y el vencimiento al decodificar el QR', () => {
+    const userId = 'rude80480123';
+    const code = 'RUDE80480123';
+    expect(context.memory.users.get(userId)?.profile.code).toBe(code);
+
+    const issued = context.credentials.issue(userId);
+    const [encoded] = issued.token.split('.');
+    const decoded = Buffer.from(encoded, 'base64url').toString('utf8');
+
+    expect(decoded).not.toContain(userId);
+    expect(decoded).not.toContain(code);
+    expect(JSON.parse(decoded)).toEqual({
+      n: expect.stringMatching(/^[A-Za-z0-9_-]{32}$/),
+      e: issued.expiresAt,
     });
   });
 

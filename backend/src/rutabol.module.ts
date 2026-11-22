@@ -14,15 +14,23 @@ import { ControlService } from './control/control.service';
 import { ReportsService } from './control/reports.service';
 import { ControlManagementController } from './control/control.controller';
 import { DocsController } from './docs';
+import {
+  ControlInstitutionsController, PublicInstitutionsController,
+} from './institutions/institutions.controller';
+import { ControlStopsController, PublicStopsController } from './stops/stops.controller';
+import { StopsService } from './stops/stops.service';
 
 @Module({
   imports: [MemoryModule, AuthModule],
   controllers: [
     PublicController, PassengerController, CredentialsController, ControlController,
     OpsController, ClaimsController, ControlManagementController, DocsController,
+    ControlInstitutionsController, PublicInstitutionsController,
+    ControlStopsController, PublicStopsController,
   ],
   providers: [
     CredentialsService, PublicService, OpsService, ClaimsService, ControlService, ReportsService,
+    StopsService,
   ],
   exports: [
     CredentialsService, PublicService, OpsService, ClaimsService, ControlService, ReportsService,

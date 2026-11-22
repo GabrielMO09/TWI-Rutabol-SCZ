@@ -8,8 +8,8 @@ export class OpsController {
   constructor(private readonly ops: OpsService) {}
 
   @Post('jornada/start')
-  start(@Headers('authorization') authorization?: string) {
-    return this.ops.setJornada(true, authorization);
+  start(@Body() body: unknown, @Headers('authorization') authorization?: string) {
+    return this.ops.setJornada(true, authorization, body);
   }
 
   @Post('jornada/end')

@@ -1,5 +1,11 @@
 import { BadRequestException } from '@nestjs/common';
 
+const IMAGE_DATA = /^data:image\/(?:jpeg|png|webp);base64,[A-Za-z0-9+/=]+(?![\s\S])/;
+const COMMON_PASSWORDS = new Set([
+  '123456', '12345678', '123456789', '1234567890', 'password', 'password123',
+  'qwerty123', 'contrasena', 'contraseña', '11111111', '00000000', 'abc12345',
+]);
+
 export function objectBody(value: unknown): Record<string, unknown> {
   if (!value || typeof value !== 'object' || Array.isArray(value)) {
     throw new BadRequestException('El cuerpo debe ser un objeto JSON.');
@@ -17,6 +23,15 @@ export function requiredText(value: unknown, label: string, min = 1, max = 500):
     throw new BadRequestException(`${label}: entre ${min} y ${max} caracteres.`);
   }
   return result;
+}
+
+export function imageData(value: unknown, label: string, maxChars: number): string {
+  if (typeof value !== 'string' || value.length > maxChars || !IMAGE_DATA.test(value)) {
+    throw new BadRequestException(
+      `${label} debe ser una imagen JPEG, PNG o WebP en base64 de hasta ${maxChars} caracteres.`,
+    );
+  }
+  return value;
 }
 
 export function money(value: unknown, min: number, max: number): number {
@@ -43,8 +58,11 @@ export function idempotencyKey(value: unknown): string {
 }
 
 export function password(value: unknown): string {
-  if (typeof value !== 'string' || value.length < 6 || value.length > 1024) {
-    throw new BadRequestException('La contraseña debe tener entre 6 y 1024 caracteres.');
+  if (typeof value !== 'string' || value.length < 8 || value.length > 1024) {
+    throw new BadRequestException('La contraseña debe tener entre 8 y 1024 caracteres.');
+  }
+  if (COMMON_PASSWORDS.has(value.toLowerCase())) {
+    throw new BadRequestException('La contraseña es demasiado común.');
   }
   return value;
 }

@@ -1,5 +1,6 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { MemoryService } from '../micros/memory.service';
+import type { Bus } from '../micros/models';
 import { haversine } from '../shared/geo';
 
 @Injectable()
@@ -31,11 +32,20 @@ export class PublicService {
       }));
   }
 
+  /** RNF-13: fuera de jornada la posición no se publica (se muestra el punto de inicio de la línea). */
+  publicBus(bus: Bus): Bus {
+    this.memory.refreshBus(bus);
+    const copy = structuredClone(bus);
+    if (!bus.onDuty) {
+      const start = this.memory.lines.find((line) => line.id === bus.line)?.waypoints[0];
+      if (start) copy.pos = [...start] as [number, number];
+      copy.source = 'simulado';
+    }
+    return copy;
+  }
+
   world() {
-    const buses = this.memory.buses.filter((bus) => bus.active).map((bus) => {
-      this.memory.refreshBus(bus);
-      return structuredClone(bus);
-    });
+    const buses = this.memory.buses.filter((bus) => bus.active).map((bus) => this.publicBus(bus));
     const ids = new Set(buses.map((bus) => bus.id));
     return {
       buses,

@@ -28,13 +28,23 @@ describe('Jornada, ocupación, incidentes y pases', () => {
     expect(context.publicService.world().buses.find((bus) => bus.id === '17-045'))
       .toMatchObject({ stale: true, onDuty: false });
     expect(() => context.ops.location('17-045', { lat: 0, lng: 0 }, driver)).toThrow();
-    context.ops.setJornada(true, driver);
+    expect(() => context.ops.setJornada(true, driver)).toThrow('GPS');
+    expect(() => context.ops.setJornada(true, driver, { lat: 500, lng: 0 })).toThrow();
+    context.ops.setJornada(true, driver, { lat: -17.78, lng: -63.18 });
     context.ops.location('17-045', { lat: -17.78, lng: -63.18 }, driver);
     const before = context.memory.buses[0].pos;
     context.memory.tick();
     expect(context.memory.buses[0].pos).toEqual(before);
     expect(context.memory.buses[0].source).toBe('gps');
     expect(context.ops.jornada(driver)).toMatchObject({ onDuty: true, busId: '17-045' });
+  });
+
+  it('no publica la posición GPS real de una unidad fuera de jornada', () => {
+    context.ops.location('17-045', { lat: -17.7001, lng: -63.1001 }, driver);
+    context.ops.setJornada(false, driver);
+    const bus = context.publicService.world().buses.find((item) => item.id === '17-045')!;
+    expect(bus.pos).not.toEqual([-17.7001, -63.1001]);
+    expect(context.micros.findMicroById('17-045').pos).toEqual(bus.pos);
   });
 
   it('corrige ocupación, valida límites, audita y retira la alerta al bajar', () => {
@@ -44,11 +54,13 @@ describe('Jornada, ocupación, incidentes y pases', () => {
       .toThrow();
     expect(() => context.ops.correct('17-045', { occupancy: 25, reason: 'corto'.slice(0, 4) }, driver))
       .toThrow();
-    context.ops.correct('17-045', { occupancy: 26, reason: 'Conteo manual' }, driver);
+    // RN-07: nunca por encima del aforo autorizado (25).
+    expect(() => context.ops.correct('17-045', { occupancy: 26, reason: 'Conteo manual' }, driver))
+      .toThrow('aforo');
     context.ops.correct('17-045', { occupancy: 25, reason: 'Segundo conteo' }, driver);
     expect(context.memory.alerts.filter((item) => item.kind === 'aforo')).toHaveLength(1);
     expect(context.memory.occupancyEvents.map((item) => item.kind))
-      .toEqual(['correccion', 'correccion']);
+      .toEqual(['correccion']);
     context.micros.disembark('17-045', driver);
     expect(context.memory.alerts.filter((item) => item.kind === 'aforo')).toHaveLength(0);
     context.ops.correct('17-045', { occupancy: 0, reason: 'Unidad vacía' }, driver);
@@ -64,7 +76,12 @@ describe('Jornada, ocupación, incidentes y pases', () => {
     const actor = context.accreditation.profile('control@rutabol.bo');
     context.fares.update(actor, { escolar: 1.5, reason: 'Nueva tarifa escolar' });
     const before = context.memory.reqs.length;
-    const ticket = context.ops.cash('17-045', { category: 'escolar', fare: 0 }, driver);
+    // Sin credencial acreditada no hay tarifa preferencial; con la del estudiante aprobado, sí.
+    expect(() => context.ops.cash('17-045', { category: 'escolar' }, driver)).toThrow('credencial');
+    expect(() => context.ops.cash('17-045', { category: 'universitario', token: 'x.y' }, driver)).toThrow();
+    const token = context.credentials.issue('rude80480123').token;
+    const ticket = context.ops.cash('17-045', { category: 'escolar', token, fare: 0 }, driver);
+    expect(() => context.ops.cash('17-045', { category: 'escolar', token }, driver)).toThrow(); // QR de un solo uso
     expect(ticket).toMatchObject({
       method: 'Efectivo', status: 'abordado', category: 'escolar', fare: 1.5,
     });
@@ -106,17 +123,23 @@ describe('Jornada, ocupación, incidentes y pases', () => {
 
   it('canjea únicamente en destino, una vez, sin nueva subida ni cobro', async () => {
     context.micros.emergency('17-045', driver);
-    const transfer = context.micros.emergencyTransfer('17-045', { rescueId: '44-057' }, driver);
+    // RF-17: otra línea se rechaza; el rescate es una unidad de la misma línea.
+    expect(() => context.micros.emergencyTransfer('17-045', { rescueId: '44-057' }, driver))
+      .toThrow('misma línea');
+    context.control.createDriver(context.accreditation.profile('control@rutabol.bo'), {
+      name: 'Chofer Rescate', line: '17', internal: '078', pin: '4321',
+    });
+    const transfer = context.micros.emergencyTransfer('17-045', { rescueId: '17-078' }, driver);
     const rescue = `Bearer ${(await context.auth.loginDriver({
-      line: '44', internal: '057', pin: '1234',
+      line: '17', internal: '078', pin: '4321',
     })).token}`;
     const pass = transfer.passes[0];
     expect(() => context.ops.redeem({ code: pass.code }, driver)).toThrow();
-    const occupancy = context.memory.buses.find((bus) => bus.id === '44-057')!.occupancy;
+    const occupancy = context.memory.buses.find((bus) => bus.id === '17-078')!.occupancy;
     const events = context.memory.occupancyEvents.length;
     expect(context.ops.redeem({ code: pass.code }, rescue)).toEqual({ ok: true });
     expect(() => context.ops.redeem({ code: pass.code }, rescue)).toThrow();
-    expect(context.memory.buses.find((bus) => bus.id === '44-057')!.occupancy).toBe(occupancy);
+    expect(context.memory.buses.find((bus) => bus.id === '17-078')!.occupancy).toBe(occupancy);
     expect(context.memory.occupancyEvents).toHaveLength(events);
     const expired = context.memory.passes.find((item) => item.code === transfer.passes[1].code)!;
     expired.expires = Date.now();

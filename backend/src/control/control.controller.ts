@@ -7,6 +7,7 @@ import type { AuthRequest } from '../auth/roles.guard';
 import { ClaimsService } from '../claims/claims.service';
 import { OpsService } from '../ops/ops.service';
 import { ControlService } from './control.service';
+import { paginate } from "../shared/pagination";
 import { ReportsService } from './reports.service';
 
 @Controller('api/control')
@@ -25,8 +26,8 @@ export class ControlManagementController {
   }
 
   @Get('users')
-  users() {
-    return this.control.users();
+  users(@Query("limit") limit?: string, @Query("offset") offset?: string) {
+    return paginate(this.control.users(), limit, offset);
   }
 
   @Post('users/:id/status')
@@ -35,8 +36,8 @@ export class ControlManagementController {
   }
 
   @Get('claims')
-  allClaims() {
-    return this.claims.list();
+  allClaims(@Query("limit") limit?: string, @Query("offset") offset?: string) {
+    return paginate(this.claims.list(), limit, offset);
   }
 
   @Post('claims/:id')
@@ -45,8 +46,8 @@ export class ControlManagementController {
   }
 
   @Get('incidents')
-  incidents() {
-    return this.ops.incidents();
+  incidents(@Query("limit") limit?: string, @Query("offset") offset?: string) {
+    return paginate(this.ops.incidents(), limit, offset);
   }
 
   @Patch('incidents/:id')

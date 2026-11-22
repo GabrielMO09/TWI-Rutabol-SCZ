@@ -32,6 +32,9 @@ export function changeOccupancy(
   if (!Number.isInteger(to) || to < 0 || to > 60) {
     throw new BadRequestException('La ocupación debe ser un entero entre 0 y 60.');
   }
+  if (to > bus.max && to > bus.occupancy) {
+    throw new BadRequestException(`La ocupación no puede superar el aforo autorizado (${bus.max}).`);
+  }
   const from = bus.occupancy;
   bus.occupancy = to;
   if (from !== to || kind === 'correccion') {

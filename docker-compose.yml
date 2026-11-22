@@ -1,0 +1,77 @@
+# PostgreSQL de Rutabol-SCZ con volumen persistente.
+#   docker compose up -d            -> levanta la BD (puerto 5434, no choca con un PG local en 5432)
+#   docker compose restart postgres -> los datos sobreviven (volumen "pgdata")
+#   docker compose down -v          -> BORRA el volumen y los datos
+# Contrasenas: variables de entorno o los valores por defecto de DESARROLLO de abajo (cambiarlos fuera de local).
+#   docker compose --profile full up -d --build -> levanta la BD, la API y el frontend
+name: rutabol-scz-pg18
+services:
+  postgres:
+    image: postgres:18
+    container_name: rutabol-SCZ
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${DB_NAME:-rutabol_scz}
+      POSTGRES_USER: ${DB_OWNER_USER:-rutabol_owner}
+      POSTGRES_PASSWORD: ${DB_OWNER_PASSWORD:-owner_dev_pass}
+      DB_APP_USER: ${DB_APP_USER:-rutabol_app}
+      DB_APP_PASSWORD: ${DB_APP_PASSWORD:-app_dev_pass}
+    ports:
+      - "${DB_PORT:-5434}:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql
+      # Solo se ejecutan en el PRIMER arranque (volumen vacio), en orden alfabetico.
+      - ./bd/00_app_role.sh:/docker-entrypoint-initdb.d/00_app_role.sh:ro
+      - ./bd/01_esquema.sql:/docker-entrypoint-initdb.d/10_schema.sql:ro
+      - ./bd/02_datos_prueba.sql:/docker-entrypoint-initdb.d/20_datos_prueba.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  backend:
+    profiles: ["full"]
+    build:
+      context: ./backend
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      PORT: "3001"
+      DB_HOST: postgres
+      DB_PORT: "5432"
+      DB_NAME: ${DB_NAME:-rutabol_scz}
+      DB_APP_USER: ${DB_APP_USER:-rutabol_app}
+      DB_APP_PASSWORD: ${DB_APP_PASSWORD:-app_dev_pass}
+      DB_SSL: "${DB_SSL:-false}"
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:3000}
+      TRUST_PROXY: "${TRUST_PROXY:-}"
+      CREDENTIAL_SECRET: ${CREDENTIAL_SECRET:-credential_dev_only}
+    ports:
+      - "${BACKEND_PORT:-3001}:3001"
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch(\"http://127.0.0.1:3001/api/health/db\").then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+
+  frontend:
+    profiles: ["full"]
+    build:
+      context: ./frontend
+      args:
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:3001/api}
+    depends_on:
+      backend:
+        condition: service_healthy
+    ports:
+      - "${FRONTEND_PORT:-3000}:3000"
+
+volumes:
+  pgdata:
+
+networks:
+  default:
+    driver: bridge

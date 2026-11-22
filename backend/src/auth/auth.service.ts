@@ -8,18 +8,26 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { randomBytes } from 'node:crypto';
-import { MemoryService } from '../micros/memory.service';
+import {
+  LOGIN_ACCOUNT_WINDOW, LOGIN_ATTEMPT_WINDOW, LOGIN_STRIKE_TTL, MemoryService, RECOVERY_REQUEST_WINDOW,
+} from '../micros/memory.service';
 import type { Profile, Role, Session, User } from '../micros/models';
-import { objectBody, password, requiredText, text } from '../micros/input';
-import { AccreditationService } from '../shared/accreditation.service';
+import { imageData, objectBody, password, requiredText, text } from '../micros/input';
+import { AccreditationService, ACCOUNT_CONFLICT, registrationEmail } from '../shared/accreditation.service';
 import { AuditService } from '../shared/audit.service';
-import { hashPassword, matchesCode, matchesPassword, randomCode } from '../shared/security';
+import {
+  exposeDevCode, hashPassword, matchesCode, matchesPassword, randomCode, sessionKey,
+} from '../shared/security';
+import { SESSION_MAX_AGE, sessionCookieToken } from '../shared/session-cookie';
 
-const TTL = 8 * 60 * 60 * 1000;
+const RECOVERY_CODE_TTL = 15 * 60_000;
+const LOGIN_ACCOUNT_BLOCK = 15 * 60_000;
 const SUSPENDED = 'Tu cuenta está suspendida. Contacta al Centro de Control.';
 
 @Injectable()
 export class AuthService {
+  private readonly dummySecret = hashPassword(randomBytes(32).toString('hex'));
+
   constructor(
     private readonly memory: MemoryService,
     private readonly accreditation: AccreditationService,
@@ -40,81 +48,149 @@ export class AuthService {
     if (category !== 'general' && category !== 'escolar' && category !== 'universitario') {
       throw new BadRequestException('Selecciona una categoría válida.');
     }
-    const code = requiredText(body.code, 'El identificador', 1, 200);
-    const photo = requiredText(body.photo, 'La fotografía del rostro', 1, 4_000_000);
-    const nextPassword = password(body.password);
-    this.accreditation.validateCode(category, code);
-    const institution = category === 'general'
-      ? undefined
-      : requiredText(body.institution, 'La institución', 2, 200);
-    const userId = code.toLowerCase();
-    if (this.memory.users.has(userId)) {
-      throw new ConflictException('Ya existe una cuenta con ese identificador.');
+    const ci = requiredText(body.ci, 'El CI', 5, 15).toUpperCase();
+    if (!/^\d{5,12}(?:-[0-9][A-Z])?$/.test(ci)) {
+      throw new BadRequestException('Ingresa un CI válido, con complemento si corresponde.');
     }
+    const email = registrationEmail(body.email);
+    const localPhone = requiredText(body.phone, 'El teléfono', 8, 30)
+      .replace(/[\s()-]/g, '').replace(/^\+591/, '');
+    if (!/^[23467]\d{7}$/.test(localPhone)) {
+      throw new BadRequestException('Ingresa un teléfono boliviano de 8 dígitos.');
+    }
+    const photo = imageData(body.photo, 'La fotografía del rostro', 200_000);
+    const nextPassword = password(body.password);
+    if (body.passwordConfirmation !== nextPassword) {
+      throw new BadRequestException('Las contraseñas deben coincidir.');
+    }
+    const suppliedCode = text(body.code);
+    const code = category === 'general' ? ci : category === 'universitario'
+      ? email : suppliedCode;
+    const userId = code.toLowerCase();
+    const normalizedSuppliedCode = suppliedCode.toLowerCase();
+    const secret = await hashPassword(nextPassword);
+
+    for (const { profile } of this.memory.users.values()) {
+      const existingCi = profile.ci ?? (profile.category === 'general' ? profile.code : undefined);
+      const existingEmail = profile.email ?? (profile.userId.includes('@') ? profile.userId : undefined);
+      const identifiers = [profile.userId, existingCi, existingEmail, profile.busId];
+      const codeConflict = identifiers.some((identifier) => {
+        const normalized = identifier?.toLowerCase();
+        return normalized !== undefined &&
+          (normalized === userId || (normalizedSuppliedCode !== '' && normalized === normalizedSuppliedCode));
+      });
+      if (codeConflict || existingCi?.toUpperCase() === ci || existingEmail?.toLowerCase() === email) {
+        throw new ConflictException(ACCOUNT_CONFLICT);
+      }
+    }
+
+    if (category === 'escolar') requiredText(body.code, 'El código RUDE', 8, 20);
+    const request = { institution: body.institution, code, institutionalCode: body.institutionalCode };
+    const prepared = category === 'general'
+      ? undefined : this.accreditation.prepareRequest(category, request);
     const user = this.memory.addUser({
       userId, role: 'pasajero', name, category, code, photo, status: 'activo',
-    }, nextPassword);
-    let devCode: string | undefined;
-    if (institution) {
-      devCode = this.accreditation.request(userId, { institution, code }).devCode;
-    }
-    await user.secret;
-    return { ...this.login(user.profile), ...(devCode ? { devCode } : {}) };
+      ci, email, phone: `+591${localPhone}`, acceptedTermsAt: Date.now(),
+    }, secret);
+    const devCode = prepared && this.accreditation.startRequest(userId, prepared).devCode;
+    return { ...this.login(user.profile), ...(devCode && exposeDevCode() ? { devCode } : {}) };
   }
 
   private login(profile: Profile): { token: string; profile: Profile } {
     const now = Date.now();
     const token = randomBytes(32).toString('base64url');
-    this.memory.sessions.set(token, {
-      id: this.memory.nextId('SES'),
+    const key = sessionKey(token);
+    this.memory.sessions.set(key, {
+      id: key.slice(0, 16),
       userId: profile.userId,
       createdAt: now,
       lastSeenAt: now,
-      expiresAt: now + TTL,
+      expiresAt: now + SESSION_MAX_AGE * 1000,
     });
     this.memory.events.emit();
     return { token, profile: this.accreditation.profile(profile.userId) };
   }
 
-  private blocked(key: string): void {
-    const attempt = this.memory.loginAttempts.get(key);
-    if (attempt?.blockedUntil && attempt.blockedUntil > Date.now()) {
-      throw new HttpException('Demasiados intentos. Intenta de nuevo en 5 minutos.', 429);
-    }
-    if (attempt && (attempt.blockedUntil ?? attempt.firstAt + 300000) <= Date.now()) {
-      this.memory.loginAttempts.delete(key);
+  private checkBlock(blockedUntil: number, now: number): void {
+    const remaining = blockedUntil - now;
+    if (remaining > 0) {
+      const minutes = Math.ceil(remaining / 60_000);
+      throw new HttpException(
+        `Demasiados intentos. Intenta de nuevo en ${minutes} ${minutes === 1 ? 'minuto' : 'minutos'}.`, 429,
+      );
     }
   }
 
-  private failure(key: string): never {
+  private blocked(key: string, accountKey: string): void {
     const now = Date.now();
-    const attempt = this.memory.loginAttempts.get(key) ?? { failures: 0, firstAt: now };
+    this.checkBlock(this.memory.loginAccountAttempts.get(accountKey)?.blockedUntil ?? 0, now);
+    const attempt = this.memory.loginAttempts.get(key);
+    if (!attempt) return;
+    this.checkBlock(attempt.blockedUntil ?? 0, now);
+    const expiresAt = attempt.strikes > 0
+      ? attempt.lastAt + LOGIN_STRIKE_TTL : attempt.firstAt + LOGIN_ATTEMPT_WINDOW;
+    if (expiresAt <= now) this.memory.loginAttempts.delete(key);
+  }
+
+  private failure(key: string, accountKey: string): never {
+    const now = Date.now();
+    const account = this.memory.loginAccountAttempts.get(accountKey) ?? { failedAt: [], blockedUntil: 0 };
+    account.failedAt = account.failedAt.filter((at) => at + LOGIN_ACCOUNT_WINDOW > now);
+    account.failedAt.push(now);
+    if (account.failedAt.length >= 50) {
+      account.failedAt = [];
+      account.blockedUntil = now + LOGIN_ACCOUNT_BLOCK;
+    }
+    this.memory.loginAccountAttempts.set(accountKey, account);
+
+    const attempt = this.memory.loginAttempts.get(key) ?? {
+      failures: 0, firstAt: now, lastAt: now, strikes: 0,
+    };
+    if (attempt.failures === 0 || attempt.firstAt + LOGIN_ATTEMPT_WINDOW <= now) {
+      attempt.failures = 0;
+      attempt.firstAt = now;
+    }
     attempt.failures += 1;
-    if (attempt.failures >= 5) attempt.blockedUntil = now + 300000;
+    attempt.lastAt = now;
+    if (attempt.failures >= 5) {
+      attempt.strikes += 1;
+      attempt.failures = 0;
+      attempt.blockedUntil = now + Math.min(
+        LOGIN_ATTEMPT_WINDOW * 2 ** (attempt.strikes - 1), LOGIN_STRIKE_TTL,
+      );
+    }
     this.memory.loginAttempts.set(key, attempt);
-    this.blocked(key);
+    this.blocked(key, accountKey);
     throw new UnauthorizedException('Identificador o contraseña incorrectos.');
   }
 
-  private async authenticate(role: Role, identifier: string, candidate: unknown) {
-    const normalized = identifier.toLowerCase();
-    const key = `${role}:${normalized}`;
+  private async authenticate(
+    role: Role, identifier: string, candidate: unknown, ip: string,
+    authorization?: string, cookie?: string,
+  ) {
+    // Tope de 120: el identificador se usa como clave de intentos y como destino de auditoría (antes no tenía límite).
+    const normalized = identifier.slice(0, 120).toLowerCase();
+    const accountKey = `${role}:${normalized}`;
+    const key = `${accountKey}:${ip}`;
     const actor = { userId: normalized || 'desconocido', role };
     try {
-      this.blocked(key);
+      this.blocked(key, accountKey);
       const user = [...this.memory.users.values()].find(({ profile }) =>
         profile.role === role &&
         (role === 'chofer'
           ? profile.busId === normalized
           : profile.userId.toLowerCase() === normalized ||
-            profile.code?.toLowerCase() === normalized),
+            profile.code?.toLowerCase() === normalized ||
+            profile.ci?.toLowerCase() === normalized ||
+            profile.email?.toLowerCase() === normalized),
       );
-      const valid = user ? await matchesPassword(user.secret, candidate) : false;
-      this.blocked(key);
-      if (!user || !valid) this.failure(key);
+      const valid = await matchesPassword(user?.secret ?? this.dummySecret, candidate);
+      this.blocked(key, accountKey);
+      if (!user || !valid) this.failure(key, accountKey);
       if (user.profile.status === 'suspendido') throw new ForbiddenException(SUSPENDED);
       this.memory.loginAttempts.delete(key);
       if (role === 'chofer') this.memory.seedRequests(user.profile.busId!);
+      this.revokePresentedSession(authorization, cookie);
       const result = this.login(user.profile);
       if (role === 'control') {
         this.audit.log(user.profile, 'auth.login.control', user.profile.userId, 'ok', 'Sesión iniciada.');
@@ -131,21 +207,35 @@ export class AuthService {
     }
   }
 
-  loginPassenger(input: unknown) {
+  loginPassenger(input: unknown, ip = 'local', authorization?: string, cookie?: string) {
     const body = objectBody(input);
-    return this.authenticate('pasajero', text(body.id), body.password);
+    return this.authenticate('pasajero', text(body.id), body.password, ip, authorization, cookie);
   }
 
-  loginDriver(input: unknown) {
+  loginDriver(input: unknown, ip = 'local', authorization?: string, cookie?: string) {
     const body = objectBody(input);
     return this.authenticate(
-      'chofer', `${text(body.line)}-${text(body.internal)}`, body.pin,
+      'chofer', `${text(body.line)}-${text(body.internal)}`, body.pin, ip, authorization, cookie,
     );
   }
 
-  loginControl(input: unknown) {
+  loginControl(input: unknown, ip = 'local', authorization?: string, cookie?: string) {
     const body = objectBody(input);
-    return this.authenticate('control', text(body.id), body.password);
+    return this.authenticate('control', text(body.id), body.password, ip, authorization, cookie);
+  }
+
+  private revokePresentedSession(authorization?: string, cookie?: string): void {
+    const cookieToken = sessionCookieToken(cookie);
+    const header = cookieToken === undefined ? authorization : `Bearer ${cookieToken}`;
+    if (header === undefined) return;
+    try {
+      this.authenticateRequest(header);
+      this.memory.sessions.delete(sessionKey(this.token(header)));
+    } catch (error) {
+      if (!(error instanceof UnauthorizedException ||
+        error instanceof ForbiddenException ||
+        error instanceof NotFoundException)) throw error;
+    }
   }
 
   private token(authorization?: string): string {
@@ -154,8 +244,10 @@ export class AuthService {
     return match[1];
   }
 
-  authenticateRequest(authorization?: string): { profile: Profile; session: Session } {
-    const session = this.memory.sessions.get(this.token(authorization));
+  authenticateRequest(authorization?: string, cookie?: string): { profile: Profile; session: Session } {
+    const cookieToken = sessionCookieToken(cookie);
+    const token = this.token(cookieToken === undefined ? authorization : `Bearer ${cookieToken}`);
+    const session = this.memory.sessions.get(sessionKey(token));
     if (!session) throw new UnauthorizedException('La sesión no es válida.');
     if (session.expiresAt <= Date.now()) {
       throw new UnauthorizedException('La sesión expiró.');
@@ -190,13 +282,13 @@ export class AuthService {
 
   refresh(authorization?: string) {
     const profile = this.resolve(authorization);
-    this.memory.sessions.delete(this.token(authorization));
+    this.memory.sessions.delete(sessionKey(this.token(authorization)));
     return this.login(profile);
   }
 
   logout(authorization?: string): { ok: true } {
     this.resolve(authorization);
-    this.memory.sessions.delete(this.token(authorization));
+    this.memory.sessions.delete(sessionKey(this.token(authorization)));
     this.memory.events.emit();
     return { ok: true };
   }
@@ -211,6 +303,7 @@ export class AuthService {
         id: session.id,
         createdAt: session.createdAt,
         lastSeenAt: session.lastSeenAt,
+        expiresAt: session.expiresAt,
         current: session.id === current.session.id,
       }));
   }
@@ -228,29 +321,44 @@ export class AuthService {
 
   private findUser(identifier: string): User | undefined {
     const normalized = identifier.toLowerCase();
-    return [...this.memory.users.values()].find(
-      ({ profile }) =>
-        profile.userId.toLowerCase() === normalized ||
-        profile.code?.toLowerCase() === normalized,
-    );
+    if (!normalized) return undefined;
+    let match: User | undefined;
+    for (const user of this.memory.users.values()) {
+      const { profile } = user;
+      if (profile.role !== 'pasajero' && profile.role !== 'control' && profile.role !== 'chofer') continue;
+      const identifiers = [profile.userId, profile.code, profile.ci, profile.email];
+      if (profile.role === 'chofer') identifiers.push(profile.busId);
+      if (!identifiers.some((value) => value?.toLowerCase() === normalized)) continue;
+      if (match) return undefined;
+      match = user;
+    }
+    return match;
   }
 
   recoveryRequest(input: unknown): { sent: true; devCode?: string } {
     const body = objectBody(input);
     const user = this.findUser(requiredText(body.id, 'El identificador', 1, 200));
     if (!user) return { sent: true };
+    const userId = user.profile.userId;
+    const now = Date.now();
+    const requests = this.memory.recoveryRequests.get(userId) ?? { issuedAt: [], blockedUntil: 0 };
+    if (requests.blockedUntil > now) return { sent: true };
+    const issuedAt = requests.issuedAt.filter((at) => at + RECOVERY_REQUEST_WINDOW > now);
+    if (issuedAt.length >= 3) return { sent: true };
+
     const devCode = randomCode();
-    this.memory.recoveryCodes.set(user.profile.userId, {
-      code: devCode, expiresAt: Date.now() + 15 * 60000, attempts: 0,
+    this.memory.recoveryRequests.set(userId, { issuedAt: [...issuedAt, now], blockedUntil: 0 });
+    this.memory.recoveryCodes.set(userId, {
+      code: devCode, expiresAt: now + RECOVERY_CODE_TTL, attempts: 0,
     });
     this.memory.events.emit();
-    return { sent: true, devCode };
+    return exposeDevCode() ? { sent: true, devCode } : { sent: true };
   }
 
   async recoveryConfirm(input: unknown): Promise<{ ok: true }> {
     const body = objectBody(input);
-    const next = password(body.newPassword);
     const user = this.findUser(text(body.id));
+    const next = this.validateNewSecret(user, body.newPassword);
     const userId = user?.profile.userId ?? '';
     const saved = this.memory.recoveryCodes.get(userId);
     if (!user || !saved || saved.expiresAt <= Date.now()) {
@@ -258,10 +366,16 @@ export class AuthService {
     }
     if (!matchesCode(saved.code, text(body.code))) {
       saved.attempts += 1;
-      if (saved.attempts >= 5) this.memory.recoveryCodes.delete(userId);
+      if (saved.attempts >= 5) {
+        this.memory.recoveryCodes.delete(userId);
+        const requests = this.memory.recoveryRequests.get(userId);
+        this.memory.recoveryRequests.set(userId, {
+          issuedAt: requests?.issuedAt ?? [],
+          blockedUntil: Date.now() + RECOVERY_CODE_TTL,
+        });
+      }
       throw new BadRequestException('El código de recuperación no es válido o expiró.');
     }
-    this.validateNewSecret(user, next);
     this.memory.recoveryCodes.delete(userId);
     user.secret = hashPassword(next);
     await user.secret;
@@ -276,7 +390,7 @@ export class AuthService {
     const name = body.name === undefined
       ? undefined : requiredText(body.name, 'El nombre completo', 3, 120);
     const photo = body.photo === undefined
-      ? undefined : requiredText(body.photo, 'La fotografía', 1, 4_000_000);
+      ? undefined : imageData(body.photo, 'La fotografía del rostro', 200_000);
     if (name === undefined && photo === undefined) {
       throw new BadRequestException('Indica el nombre o la fotografía.');
     }
@@ -287,10 +401,12 @@ export class AuthService {
     return this.accreditation.profile(profile.userId);
   }
 
-  private validateNewSecret(user: User, next: string): void {
-    if (user.profile.role === 'chofer' && !/^\d{4}$/.test(next)) {
+  private validateNewSecret(user: User | undefined, next: unknown): string {
+    if (user?.profile.role !== 'chofer') return password(next);
+    if (typeof next !== 'string' || !/^\d{4}$/.test(next)) {
       throw new BadRequestException('El PIN del chofer debe tener 4 dígitos.');
     }
+    return next;
   }
 
   async changePassword(input: unknown, authorization?: string): Promise<{ ok: true }> {
@@ -300,8 +416,7 @@ export class AuthService {
     if (!await matchesPassword(user.secret, body.current)) {
       throw new UnauthorizedException('La contraseña actual es incorrecta.');
     }
-    const next = password(body.next);
-    this.validateNewSecret(user, next);
+    const next = this.validateNewSecret(user, body.next);
     user.secret = hashPassword(next);
     await user.secret;
     this.revokeAll(profile.userId);

@@ -1,29 +1,37 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { createHmac, randomBytes, timingSafeEqual } from 'node:crypto';
 import { MemoryService } from '../micros/memory.service';
 import { objectBody, maskCode, text } from '../micros/input';
 import { AccreditationService } from '../shared/accreditation.service';
 
 interface Payload {
-  u: string;
   n: string;
   e: number;
 }
 
 @Injectable()
 export class CredentialsService {
-  private readonly secret = process.env.CREDENTIAL_SECRET || randomBytes(32).toString('hex');
+  private readonly secret: string;
 
   constructor(
     private readonly memory: MemoryService,
     private readonly accreditation: AccreditationService,
-  ) {}
+  ) {
+    const configured = process.env.CREDENTIAL_SECRET;
+    if (!configured && process.env.NODE_ENV === 'production') {
+      throw new Error('Debes definir CREDENTIAL_SECRET para emitir credenciales en producción.');
+    }
+    if (!configured) {
+      Logger.warn('CREDENTIAL_SECRET no está definida. Se usará un secreto aleatorio hasta reiniciar.', CredentialsService.name);
+    }
+    this.secret = configured || randomBytes(32).toString('hex');
+  }
 
   issue(userId: string) {
     const profile = this.accreditation.profile(userId);
     const expiresAt = Date.now() + 60000;
     const nonce = randomBytes(24).toString('base64url');
-    const payload: Payload = { u: userId, n: nonce, e: expiresAt };
+    const payload: Payload = { n: nonce, e: expiresAt };
     const encoded = Buffer.from(JSON.stringify(payload)).toString('base64url');
     const signature = createHmac('sha256', this.secret).update(encoded).digest('base64url');
     this.memory.credentials.set(nonce, { userId, expiresAt });
@@ -57,25 +65,25 @@ export class CredentialsService {
       if (!value || typeof value !== 'object') return invalid('Código inválido.');
       const object = value as Record<string, unknown>;
       if (
-        typeof object.u !== 'string' ||
+        Object.keys(object).length !== 2 ||
         typeof object.n !== 'string' ||
         typeof object.e !== 'number' ||
         !Number.isFinite(object.e)
       ) return invalid('Código inválido.');
-      payload = { u: object.u, n: object.n, e: object.e };
+      payload = { n: object.n, e: object.e };
     } catch {
       return invalid('Código inválido.');
     }
     if (payload.e <= Date.now()) return invalid('Código expirado.');
     const saved = this.memory.credentials.get(payload.n);
-    if (!saved || saved.userId !== payload.u || saved.expiresAt !== payload.e) {
+    if (!saved || saved.expiresAt !== payload.e) {
       return invalid('Código inválido.');
     }
     if (saved.usedAt !== undefined) return invalid('Código ya utilizado');
-    const user = this.memory.users.get(payload.u);
+    const user = this.memory.users.get(saved.userId);
     if (!user || user.profile.role !== 'pasajero') return invalid('Código inválido.');
     if (user.profile.status === 'suspendido') return invalid('La cuenta está suspendida.');
-    const profile = this.accreditation.profile(payload.u);
+    const profile = this.accreditation.profile(saved.userId);
     saved.usedAt = Date.now();
     this.memory.events.emit();
     return {

@@ -4,14 +4,19 @@ import { randomBytes } from 'node:crypto';
 import type {
   Accreditation, Alert, AuditEntry, BoardingReq, Bus, Claim, Fares,
   Incident, LedgerEntry, Line, Notification, OccupancyEvent, Pass,
-  Profile, Recharge, Session, Ticket, User, Wallet,
+  Profile, Recharge, Secret, Session, Ticket, User, Wallet,
 } from './models';
 import { FARES } from './models';
 import { maskCode } from './input';
 import { EventsService } from '../shared/events.service';
 import { interpolate } from '../shared/geo';
-import { hashPassword } from '../shared/security';
+import { demoSeed, hashPassword } from '../shared/security';
 import { changeOccupancy, syncCapacity } from '../ops/occupancy';
+
+export const LOGIN_ATTEMPT_WINDOW = 5 * 60_000;
+export const LOGIN_STRIKE_TTL = 24 * 60 * 60_000;
+export const LOGIN_ACCOUNT_WINDOW = 60 * 60_000;
+export const RECOVERY_REQUEST_WINDOW = 60 * 60_000;
 
 @Injectable()
 export class MemoryService implements OnModuleInit, OnModuleDestroy {
@@ -62,11 +67,17 @@ export class MemoryService implements OnModuleInit, OnModuleDestroy {
   readonly recoveryCodes = new Map<string, {
     code: string; expiresAt: number; attempts: number;
   }>();
+  readonly recoveryRequests = new Map<string, {
+    issuedAt: number[]; blockedUntil: number;
+  }>();
   readonly credentials = new Map<string, {
     userId: string; expiresAt: number; usedAt?: number;
   }>();
   readonly loginAttempts = new Map<string, {
-    failures: number; firstAt: number; blockedUntil?: number;
+    failures: number; firstAt: number; lastAt: number; strikes: number; blockedUntil?: number;
+  }>();
+  readonly loginAccountAttempts = new Map<string, {
+    failedAt: number[]; blockedUntil: number;
   }>();
 
   private sequence = 0;
@@ -98,6 +109,8 @@ export class MemoryService implements OnModuleInit, OnModuleDestroy {
       ['lucia.vaca@upds.edu.bo', 'Lucía Vaca', 'universitario', 10],
       ['7654321', 'Pasajero General', 'general', 30],
     ];
+    // Cuentas de demostración (claves fijas): solo con ENABLE_DEMO_SEED=true.
+    if (!demoSeed()) return;
     for (const [code, name, category, balance] of passengers) {
       const profile: Profile = {
         userId: code.toLowerCase(), role: 'pasajero', name,
@@ -133,15 +146,20 @@ export class MemoryService implements OnModuleInit, OnModuleDestroy {
     }
   }
 
-  addUser(profile: Profile, password: string, balance = 0): User {
+  addUser(profile: Profile, password: string | Secret, balance = 0): User {
     const user: User = {
-      profile: { ...profile }, createdAt: Date.now(), secret: hashPassword(password),
+      profile: { ...profile }, createdAt: Date.now(), secret: typeof password === 'string' ? hashPassword(password) : Promise.resolve(password),
     };
     this.users.set(profile.userId, user);
     if (profile.role === 'pasajero') {
-      const suffix = String(randomBytes(2).readUInt16BE() % 10000).padStart(4, '0');
+      const taken = new Set([...this.wallets.values()].map((wallet) => wallet.cardNumber));
+      let cardNumber = '';
+      do {
+        const suffix = String(randomBytes(2).readUInt16BE() % 10000).padStart(4, '0');
+        cardNumber = `CRD-0000-0000-${suffix}`;
+      } while (taken.has(cardNumber));
       this.wallets.set(profile.userId, {
-        cardNumber: `CRD-0000-0000-${suffix}`,
+        cardNumber,
         balance, status: 'activa', movements: [],
       });
       this.recharges.set(profile.userId, []);
@@ -153,6 +171,19 @@ export class MemoryService implements OnModuleInit, OnModuleDestroy {
   nextId(prefix: string): string {
     this.sequence += 1;
     return `${prefix}-${String(this.sequence).padStart(6, '0')}`;
+  }
+
+  /** Tras cargar un id guardado, evita que nextId vuelva a generar uno igual. */
+  adopt(id: string): void {
+    // Solo ids con el formato de nextId (PREFIJO-000123); otras referencias no cuentan.
+    const used = Number(/^[A-Za-z]+-(\d+)$/.exec(id)?.[1] ?? 0);
+    if (used > this.sequence) this.sequence = used;
+  }
+
+  /** Igual que adopt, para los números de comprobante (R-000012). */
+  adoptReceipt(receipt: string): void {
+    const used = Number(/(\d+)$/.exec(receipt)?.[1] ?? 0);
+    if (used > this.receiptSequence) this.receiptSequence = used;
   }
 
   nextReceipt(): string {
@@ -251,9 +282,23 @@ export class MemoryService implements OnModuleInit, OnModuleDestroy {
         if (value.expiresAt <= now) codes.delete(key);
       }
     }
+    for (const [key, requests] of this.recoveryRequests) {
+      if (requests.blockedUntil <= now &&
+        requests.issuedAt.every((issuedAt) => issuedAt + RECOVERY_REQUEST_WINDOW <= now)) {
+        this.recoveryRequests.delete(key);
+      }
+    }
     for (const [key, attempt] of this.loginAttempts) {
-      if ((attempt.blockedUntil ?? attempt.firstAt + 300000) <= now) {
+      const expiresAt = attempt.strikes > 0
+        ? attempt.lastAt + LOGIN_STRIKE_TTL : attempt.firstAt + LOGIN_ATTEMPT_WINDOW;
+      if (expiresAt <= now) {
         this.loginAttempts.delete(key);
+      }
+    }
+    for (const [key, account] of this.loginAccountAttempts) {
+      account.failedAt = account.failedAt.filter((at) => at + LOGIN_ACCOUNT_WINDOW > now);
+      if (account.blockedUntil <= now && account.failedAt.length === 0) {
+        this.loginAccountAttempts.delete(key);
       }
     }
     this.events.emit();

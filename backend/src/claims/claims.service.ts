@@ -1,7 +1,7 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { MemoryService } from '../micros/memory.service';
 import type { Claim, Profile } from '../micros/models';
-import { money, objectBody, requiredText } from '../micros/input';
+import { imageData, money, objectBody, requiredText } from '../micros/input';
 import { WalletService } from '../shared/wallet.service';
 import { AuditService } from '../shared/audit.service';
 import { NotificationsService } from '../shared/notifications.service';
@@ -17,6 +17,13 @@ export class ClaimsService {
 
   create(actor: Profile, input: unknown): Claim {
     const body = objectBody(input);
+    const openClaims = this.memory.claims.filter((claim) =>
+      claim.userId === actor.userId &&
+      (claim.status === 'recibido' || claim.status === 'en-revision'),
+    );
+    if (openClaims.length >= 5) {
+      throw new BadRequestException('Ya tienes 5 reclamos abiertos. Espera su resolución.');
+    }
     const line = requiredText(body.line, 'La línea', 1, 30);
     const internal = requiredText(body.internal, 'El interno', 1, 30);
     if (!this.memory.buses.some((bus) => bus.line === line && bus.internal === internal)) {
@@ -27,8 +34,13 @@ export class ClaimsService {
       throw new BadRequestException('La fecha del viaje debe estar en milisegundos y no ser futura.');
     }
     const description = requiredText(body.description, 'La descripción', 10, 5000);
-    const evidence = body.evidence === undefined
-      ? undefined : requiredText(body.evidence, 'La evidencia', 1, 4_000_000);
+    let evidence: string | undefined;
+    if (body.evidence !== undefined) {
+      const value = body.evidence;
+      evidence = typeof value === 'string' && /^data:/i.test(value.trimStart())
+        ? imageData(value, 'La evidencia', 1_400_000)
+        : requiredText(value, 'La evidencia', 1, 1000);
+    }
     const ticketId = body.ticketId === undefined
       ? undefined : requiredText(body.ticketId, 'El ticket', 1, 100);
     if (ticketId) {
@@ -71,7 +83,7 @@ export class ClaimsService {
       const response = body.response === undefined
         ? item.response : requiredText(body.response, 'La respuesta', 1, 3000);
       const refund = body.refund === undefined
-        ? item.refund ?? 0 : money(body.refund, 0, 1_000_000);
+        ? item.refund ?? 0 : money(body.refund, 0, 200);
       const previous = item.refund ?? 0;
       if (refund < previous) {
         throw new BadRequestException('No se puede reducir un reembolso ya acreditado.');

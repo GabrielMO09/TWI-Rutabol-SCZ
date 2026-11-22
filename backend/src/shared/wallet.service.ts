@@ -4,13 +4,19 @@ import {
   HttpException,
   Injectable,
   NotFoundException,
+  ServiceUnavailableException,
 } from '@nestjs/common';
 import type { OnModuleDestroy } from '@nestjs/common';
 import { MemoryService } from '../micros/memory.service';
 import type { Movement, Profile, Recharge, Wallet } from '../micros/models';
 import { idempotencyKey, money, objectBody, requiredText, roundMoney, text } from '../micros/input';
 import { AuditService } from './audit.service';
+import { demoRecharge } from './security';
 import { NotificationsService } from './notifications.service';
+
+/** Topes de ajuste manual de saldo (hallazgo #11): por operación y por día y persona de control. */
+const ADJUST_MAX = 500;
+const ADJUST_DAILY_MAX = 2000;
 
 @Injectable()
 export class WalletService implements OnModuleDestroy {
@@ -77,6 +83,10 @@ export class WalletService implements OnModuleDestroy {
   }
 
   recharge(userId: string, input: unknown): Recharge {
+    // Sin pasarela de pago real, settle() acreditaría saldo gratis: la ruta queda cerrada salvo ENABLE_DEMO_RECHARGE=true.
+    if (!demoRecharge()) {
+      throw new ServiceUnavailableException('Las recargas aún no están habilitadas.');
+    }
     const wallet = this.wallet(userId);
     const body = objectBody(input);
     const key = idempotencyKey(body.idempotencyKey);
@@ -84,6 +94,12 @@ export class WalletService implements OnModuleDestroy {
     const existing = items.find((item) => item.idempotencyKey === key);
     if (existing) return { ...existing };
     const amount = money(body.amount, 1, 500);
+    const today = Date.now() - 86_400_000;
+    const recent = items.filter((item) => item.at > today && item.status !== 'fallida')
+      .reduce((sum, item) => sum + item.amount, 0);
+    if (recent + amount > 1000) {
+      throw new BadRequestException('Superaste el límite de recargas de Bs 1000 en 24 horas.');
+    }
     const method = body.method;
     if (method !== 'qr' && method !== 'transferencia' && method !== 'tarjeta') {
       throw new BadRequestException('El método de recarga no es válido.');
@@ -163,8 +179,16 @@ export class WalletService implements OnModuleDestroy {
       const body = objectBody(input);
       userId = requiredText(body.userId, 'El usuario', 1, 200);
       const reason = requiredText(body.reason, 'El motivo', 5);
-      const amount = money(body.amount, -1_000_000, 1_000_000);
+      const amount = money(body.amount, -ADJUST_MAX, ADJUST_MAX);
       if (amount === 0) throw new BadRequestException('El ajuste debe ser distinto de cero.');
+      // Tope diario por persona de control: un ajuste de más requiere repartirse en días o pedir otra aprobación.
+      const since = Date.now() - 86_400_000;
+      const today = this.memory.audit
+        .filter((e) => e.actorId === actor.userId && e.action === 'wallet.ajustar' && e.result === 'ok' && e.at > since)
+        .reduce((sum, e) => sum + Math.abs(Number(e.detail.split(':')[0]) || 0), 0);
+      if (today + Math.abs(amount) > ADJUST_DAILY_MAX) {
+        throw new BadRequestException(`Superaste el límite diario de ajustes (Bs ${ADJUST_DAILY_MAX}).`);
+      }
       this.move(userId, amount, 'ajuste', this.memory.nextId('AJ'));
       this.audit.log(actor, 'wallet.ajustar', userId, 'ok', `${amount}: ${reason}`);
       this.notifications.push(
