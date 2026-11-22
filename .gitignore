@@ -45,3 +45,5 @@ next-env.d.ts
 
 # registro personal de avances (no se sube)
 avances-rutabol.txt
+# Ignorar documentación
+/docs/
