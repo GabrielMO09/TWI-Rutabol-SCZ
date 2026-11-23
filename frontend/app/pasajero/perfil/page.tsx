@@ -1,18 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { Bell, KeyRound, MonitorSmartphone, Save, Trash2 } from "lucide-react";
+import { KeyRound, MonitorSmartphone, Save, Trash2 } from "lucide-react";
 import { ErrorNote } from "@/components/AuthFrame";
 import { act, useFetch } from "@/lib/api";
 import { useApp } from "@/lib/store";
 
-interface Notification {
-  id: string;
-  at: number;
-  title: string;
-  body: string;
-  read: boolean;
-}
 interface Session {
   id: string;
   createdAt: number;
@@ -21,8 +14,7 @@ interface Session {
 }
 
 export default function Perfil() {
-  const { profile, reloadProfile, refresh } = useApp();
-  const { data: notes, reload: reloadNotes } = useFetch<Notification[]>("/notifications/me", 6000);
+  const { profile, reloadProfile } = useApp();
   const { data: sessions, reload: reloadSessions } = useFetch<Session[]>("/auth/sessions");
   const [name, setName] = useState(profile?.name ?? "");
   const [current, setCurrent] = useState("");
@@ -91,33 +83,6 @@ export default function Perfil() {
         </div>
         <button className="btn btn-primary self-start">Actualizar contraseña</button>
       </form>
-
-      <section className="card p-4" aria-labelledby="notif">
-        <div className="mb-2 flex items-center justify-between">
-          <h2 id="notif" className="flex items-center gap-2 font-semibold">
-            <Bell size={18} />
-            Notificaciones
-          </h2>
-          <button className="tap text-sm font-medium text-brand underline" onClick={() => void act("/notifications/read-all").then(() => { reloadNotes(); void refresh(); })}>
-            Marcar todo como leído
-          </button>
-        </div>
-        {!notes || notes.length === 0 ? (
-          <p className="text-sm text-muted">No tienes notificaciones.</p>
-        ) : (
-          <ul className="divide-y divide-line text-sm">
-            {notes.map((n) => (
-              <li key={n.id} className="py-2">
-                <p className={n.read ? "" : "font-semibold"}>
-                  {n.title} {!n.read && <span className="chip ml-1 bg-brand text-white">Nueva</span>}
-                </p>
-                <p className="text-muted">{n.body}</p>
-                <p className="text-xs text-muted">{new Date(n.at).toLocaleString("es-BO")}</p>
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
 
       <section className="card p-4" aria-labelledby="ses">
         <h2 id="ses" className="mb-2 flex items-center gap-2 font-semibold">

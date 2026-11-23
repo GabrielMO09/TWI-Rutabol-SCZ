@@ -5,7 +5,7 @@ import PublicShell from "@/components/PublicShell";
 
 export default function MapaPublico() {
   return (
-    <PublicShell wide>
+    <PublicShell wide backHome>
       <MapExplorer mode="public" />
     </PublicShell>
   );

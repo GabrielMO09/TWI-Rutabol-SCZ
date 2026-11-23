@@ -15,7 +15,7 @@ const csp = [
   `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ""}`,
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' data: blob: https://tile.openstreetmap.org https://*.tile.openstreetmap.org",
-  `connect-src 'self' ${apiOrigin} https://router.project-osrm.org${isDev ? " ws://localhost:3000" : ""}`,
+  `connect-src 'self' ${apiOrigin} https://router.project-osrm.org${isDev ? " ws://localhost:3000 ws://rutabol.scz:3000" : ""}`,
   "frame-ancestors 'none'",
   "base-uri 'self'",
   "form-action 'self'",
@@ -32,6 +32,7 @@ const securityHeaders = [
 ];
 
 const nextConfig: NextConfig = {
+  allowedDevOrigins: ["rutabol.scz"], // acceso por BIND9 (rutabol.scz) en desarrollo
   async headers() {
     return [{ source: "/:path*", headers: securityHeaders }];
   },

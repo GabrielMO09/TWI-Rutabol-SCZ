@@ -11,8 +11,9 @@ test("el pasajero ingresa a su panel con la cuenta demo", async ({ page }) => {
   await page.getByRole("button", { name: "Ingresar", exact: true }).click();
 
   await expect(page).toHaveURL("/pasajero");
-  const navigation = page.getByRole("navigation", { name: "Secciones", exact: true });
+  const navigation = page.getByRole("navigation", { name: "Subsecciones", exact: true });
   await expect(navigation.getByRole("link", { name: "Mapa", exact: true })).toBeVisible();
+  await expect(page.getByRole("button", { name: /Notificaciones/ })).toBeVisible();
 });
 
 test("una contraseña incorrecta muestra un error y mantiene al pasajero en el formulario", async ({ page }) => {
@@ -62,7 +63,7 @@ test("tras salir, el login de Control vuelve en blanco y permite ingresar otra v
   await page.getByLabel("Contraseña", { exact: true }).fill("control123");
   await page.getByRole("button", { name: "Ingresar", exact: true }).click();
   await expect(page).toHaveURL("/control");
-  await page.getByRole("button", { name: "Salir" }).click();
+  await page.getByRole("button", { name: "Volver al inicio", exact: true }).click();
 
   // Navegación del lado del cliente (sin recargar): ahí es donde la página conservaba su estado.
   await page.evaluate(() => (window as unknown as { next: { router: { push(url: string): void } } }).next.router.push("/acceso/control"));

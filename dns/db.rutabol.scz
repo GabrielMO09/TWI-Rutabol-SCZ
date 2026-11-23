@@ -1,0 +1,6 @@
+$TTL 300
+@   IN SOA ns.rutabol.scz. admin.rutabol.scz. ( 2 3600 600 86400 300 )
+@   IN NS  ns.rutabol.scz.
+; El navegador corre en el host: el nombre apunta a 127.0.0.1.
+ns   IN A 127.0.0.1
+@    IN A 127.0.0.1

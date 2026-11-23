@@ -1,16 +1,18 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import type { ReactNode } from "react";
-import { LogIn, Map, UserPlus } from "lucide-react";
+import { Home, LogIn, Map, UserPlus } from "lucide-react";
 import { Logo } from "@/components/AppShell";
 import { useApp } from "@/lib/store";
 
 const HOME: Record<string, string> = { pasajero: "/pasajero", chofer: "/chofer", control: "/control" };
 
 /** Marco para páginas que cualquier visitante puede ver sin cuenta. */
-export default function PublicShell({ children, wide = false }: { children: ReactNode; wide?: boolean }) {
-  const { profile } = useApp();
+export default function PublicShell({ children, wide = false, backHome = false }: { children: ReactNode; wide?: boolean; backHome?: boolean }) {
+  const { profile, logout } = useApp();
+  const router = useRouter();
   return (
     <div className="flex min-h-dvh flex-col">
       <header className="sticky top-0 z-[1000] border-b border-line bg-white">
@@ -39,6 +41,24 @@ export default function PublicShell({ children, wide = false }: { children: Reac
                 </Link>
               </>
             )}
+            {backHome && (profile ? (
+              <button
+                className="btn btn-outline h-9"
+                aria-label="Volver al inicio"
+                onClick={() => {
+                  logout();
+                  router.replace("/");
+                }}
+              >
+                <Home size={16} />
+                <span className="hidden sm:inline">Volver al inicio</span>
+              </button>
+            ) : (
+              <Link href="/" aria-label="Volver al inicio" className="btn btn-outline h-9">
+                <Home size={16} />
+                <span className="hidden sm:inline">Volver al inicio</span>
+              </Link>
+            ))}
           </nav>
         </div>
       </header>
