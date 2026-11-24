@@ -5,12 +5,16 @@ import { interpolate } from '../shared/geo';
 
 interface LineRow { numero: string; nombre: string; estado: string; puntos: Position[] }
 interface BusRow {
-  linea: string; numero_interno: string; placa: string; capacidad_maxima: number;
-  estado: string; estado_operativo: Bus['status'];
+  linea: string; numero_interno: string; placa: string; capacidad_maxima: number; estado: string;
 }
 interface FareRow { nombre: keyof Omit<Fares, 'validFrom'>; monto: number; vigente_desde: Date }
 
-/** Líneas, unidades, conductores y tarifas. Mismo patrón que PersistenceService: carga y guarda diferencias. */
+/**
+ * Líneas, unidades, conductores y tarifas. Mismo patrón que PersistenceService: carga y guarda diferencias.
+ * Líneas, recorridos y unidades son del registro de transporte (fuente oficial). Rutabol guarda un espejo
+ * mínimo (linea y unidad_transporte) para dar integridad a pagos, incidencias y reclamos, y allí queda
+ * el estado operativo de cada unidad.
+ */
 export class CatalogStore {
   private readonly lines = new Map<string, string>();
   private readonly buses = new Map<string, string>();
@@ -20,14 +24,13 @@ export class CatalogStore {
   constructor(private readonly db: DatabaseService, private readonly memory: MemoryService) {}
 
   async hydrate() {
-    const lines = await this.db.query<LineRow>(
+    const lines = await this.db.transport.query<LineRow>(
       `SELECT l.numero,l.nombre,l.estado,
               coalesce(json_agg(json_build_array(p.latitud::float8,p.longitud::float8) ORDER BY p.orden)
                        FILTER (WHERE p.id_punto IS NOT NULL),'[]') AS puntos
-         FROM rutabol.linea l
-         LEFT JOIN rutabol.ruta r ON r.id_linea=l.id_linea
-               AND NOT (r.nombre='Paradas gestionadas' AND r.sentido='circular')
-         LEFT JOIN rutabol.punto_ruta p ON p.id_ruta=r.id_ruta
+         FROM transporte.linea l
+         LEFT JOIN transporte.ruta r ON r.id_linea=l.id_linea AND r.nombre='Recorrido'
+         LEFT JOIN transporte.punto_ruta p ON p.id_ruta=r.id_ruta
         GROUP BY l.id_linea`,
     );
     for (const row of lines.rows) {
@@ -37,15 +40,20 @@ export class CatalogStore {
       else this.memory.lines.push({ id: row.numero, ...values });
       this.lines.set(row.numero, this.linePrint(this.memory.lines.find((line) => line.id === row.numero)!));
     }
-    const buses = await this.db.query<BusRow>(
-      `SELECT l.numero AS linea,u.numero_interno,u.placa,u.capacidad_maxima,u.estado,u.estado_operativo
+    const buses = await this.db.transport.query<BusRow>(
+      `SELECT l.numero AS linea,u.numero_interno,u.placa,u.capacidad_maxima,u.estado
+         FROM transporte.unidad_transporte u JOIN transporte.linea l ON l.id_linea=u.id_linea`,
+    );
+    const operative = await this.db.query<{ linea: string; numero_interno: string; estado_operativo: Bus['status'] }>(
+      `SELECT l.numero AS linea,u.numero_interno,u.estado_operativo
          FROM rutabol.unidad_transporte u JOIN rutabol.linea l ON l.id_linea=u.id_linea`,
     );
+    const status = new Map(operative.rows.map((row) => [`${row.linea}-${row.numero_interno}`, row.estado_operativo]));
     for (const row of buses.rows) {
       const id = `${row.linea}-${row.numero_interno}`;
       const values = {
         plate: row.placa, max: row.capacidad_maxima, active: row.estado === 'habilitada',
-        status: row.estado_operativo,
+        status: status.get(id) ?? 'activo',
       };
       let bus = this.memory.buses.find((item) => item.id === id);
       if (bus) Object.assign(bus, values);
@@ -60,6 +68,11 @@ export class CatalogStore {
       }
       this.buses.set(id, this.busPrint(bus));
     }
+    // El espejo de Rutabol se alimenta del registro: las unidades nuevas del registro quedan disponibles para pagos y reclamos.
+    await this.mirror(
+      lines.rows.map((row) => ({ numero: row.numero, nombre: row.nombre, estado: row.estado })),
+      this.memory.buses.filter((bus) => this.buses.has(bus.id)),
+    );
     const drivers = await this.db.query<{ identificador: string }>(
       `SELECT us.identificador FROM rutabol.conductor c JOIN rutabol.usuario us ON us.id_usuario=c.id_usuario`,
     );
@@ -90,6 +103,38 @@ export class CatalogStore {
   private driverPrint = (profile: { status: string; busId?: string }) =>
     JSON.stringify([profile.status, profile.busId]);
 
+  /** Refleja líneas y unidades del registro en las tablas espejo de Rutabol (idempotente). */
+  private async mirror(lines: { numero: string; nombre: string; estado: string }[], buses: Bus[]) {
+    if (!lines.length && !buses.length) return;
+    await this.db.tx(async (client) => {
+      if (lines.length) {
+        await client.query(
+          `INSERT INTO rutabol.linea(numero,nombre,estado)
+           SELECT * FROM unnest($1::text[],$2::text[],$3::text[])
+           ON CONFLICT (numero) DO UPDATE SET nombre=EXCLUDED.nombre,estado=EXCLUDED.estado`,
+          [lines.map((l) => l.numero), lines.map((l) => l.nombre), lines.map((l) => l.estado)],
+        );
+      }
+      if (buses.length) {
+        await client.query(
+          `INSERT INTO rutabol.unidad_transporte(id_linea,numero_interno,placa,capacidad_maxima,estado,estado_operativo)
+           SELECT l.id_linea,b.interno,b.placa,b.capacidad,b.estado,b.operativo
+             FROM unnest($1::text[],$2::text[],$3::text[],$4::integer[],$5::text[],$6::text[])
+                  AS b(linea,interno,placa,capacidad,estado,operativo)
+             JOIN rutabol.linea l ON l.numero=b.linea
+           ON CONFLICT (id_linea,numero_interno) DO UPDATE SET placa=EXCLUDED.placa,
+             capacidad_maxima=EXCLUDED.capacidad_maxima,estado=EXCLUDED.estado,
+             estado_operativo=EXCLUDED.estado_operativo`,
+          [
+            buses.map((b) => b.line), buses.map((b) => b.internal), buses.map((b) => b.plate),
+            buses.map((b) => b.max), buses.map((b) => (b.active ? 'habilitada' : 'deshabilitada')),
+            buses.map((b) => b.status),
+          ],
+        );
+      }
+    });
+  }
+
   async run() {
     const lines = this.memory.lines.filter((line) => this.lines.get(line.id) !== this.linePrint(line));
     const buses = this.memory.buses.filter((bus) => this.buses.get(bus.id) !== this.busPrint(bus));
@@ -98,34 +143,54 @@ export class CatalogStore {
       this.drivers.get(profile.userId) !== this.driverPrint(profile));
     const fares = this.memory.fareHistory.slice(this.savedFares);
     if (!lines.length && !buses.length && !drivers.length && !fares.length) return;
+    if (lines.length || buses.length) {
+      await this.db.transport.tx(async (client) => {
+        for (const line of lines) {
+          await client.query(
+            `INSERT INTO transporte.linea(numero,nombre,estado) VALUES($1,$2,$3)
+             ON CONFLICT (numero) DO UPDATE SET nombre=EXCLUDED.nombre,estado=EXCLUDED.estado`,
+            [line.id, line.name, line.active ? 'activa' : 'inactiva'],
+          );
+          await client.query(
+            `INSERT INTO transporte.ruta(id_linea,nombre,origen,destino,sentido)
+             SELECT id_linea,'Recorrido','Inicio de línea','Final de línea','circular'
+               FROM transporte.linea WHERE numero=$1
+             ON CONFLICT (id_linea,nombre,sentido) DO NOTHING`,
+            [line.id],
+          );
+          await client.query(
+            `DELETE FROM transporte.punto_ruta WHERE id_ruta=
+               (SELECT r.id_ruta FROM transporte.ruta r JOIN transporte.linea l ON l.id_linea=r.id_linea
+                 WHERE l.numero=$1 AND r.nombre='Recorrido')`,
+            [line.id],
+          );
+          await client.query(
+            `INSERT INTO transporte.punto_ruta(id_ruta,orden,latitud,longitud,tipo)
+             SELECT r.id_ruta,p.ord,p.lat,p.lng,
+                    CASE WHEN p.ord=1 THEN 'inicio' WHEN p.ord=cardinality($2::float8[]) THEN 'destino' ELSE 'parada' END
+               FROM transporte.ruta r JOIN transporte.linea l ON l.id_linea=r.id_linea,
+                    unnest($2::float8[],$3::float8[]) WITH ORDINALITY AS p(lat,lng,ord)
+              WHERE l.numero=$1 AND r.nombre='Recorrido'`,
+            [line.id, line.waypoints.map(([lat]) => lat), line.waypoints.map(([, lng]) => lng)],
+          );
+        }
+        for (const bus of buses) {
+          await client.query(
+            `INSERT INTO transporte.unidad_transporte(id_linea,numero_interno,placa,capacidad_maxima,estado)
+             SELECT id_linea,$2,$3,$4,$5 FROM transporte.linea WHERE numero=$1
+             ON CONFLICT (id_linea,numero_interno) DO UPDATE SET placa=EXCLUDED.placa,
+               capacidad_maxima=EXCLUDED.capacidad_maxima,estado=EXCLUDED.estado`,
+            [bus.line, bus.internal, bus.plate, bus.max, bus.active ? 'habilitada' : 'deshabilitada'],
+          );
+        }
+      });
+    }
     await this.db.tx(async (client) => {
       for (const line of lines) {
         await client.query(
           `INSERT INTO rutabol.linea(numero,nombre,estado) VALUES($1,$2,$3)
            ON CONFLICT (numero) DO UPDATE SET nombre=EXCLUDED.nombre,estado=EXCLUDED.estado`,
           [line.id, line.name, line.active ? 'activa' : 'inactiva'],
-        );
-        await client.query(
-          `INSERT INTO rutabol.ruta(id_linea,nombre,origen,destino,sentido)
-           SELECT id_linea,'Recorrido','Inicio de línea','Final de línea','circular'
-             FROM rutabol.linea WHERE numero=$1
-           ON CONFLICT (id_linea,nombre,sentido) DO NOTHING`,
-          [line.id],
-        );
-        await client.query(
-          `DELETE FROM rutabol.punto_ruta WHERE id_ruta=
-             (SELECT r.id_ruta FROM rutabol.ruta r JOIN rutabol.linea l ON l.id_linea=r.id_linea
-               WHERE l.numero=$1 AND r.nombre='Recorrido')`,
-          [line.id],
-        );
-        await client.query(
-          `INSERT INTO rutabol.punto_ruta(id_ruta,orden,latitud,longitud,tipo)
-           SELECT r.id_ruta,p.ord,p.lat,p.lng,
-                  CASE WHEN p.ord=1 THEN 'inicio' WHEN p.ord=cardinality($2::float8[]) THEN 'destino' ELSE 'parada' END
-             FROM rutabol.ruta r JOIN rutabol.linea l ON l.id_linea=r.id_linea,
-                  unnest($2::float8[],$3::float8[]) WITH ORDINALITY AS p(lat,lng,ord)
-            WHERE l.numero=$1 AND r.nombre='Recorrido'`,
-          [line.id, line.waypoints.map(([lat]) => lat), line.waypoints.map(([, lng]) => lng)],
         );
       }
       for (const bus of buses) {

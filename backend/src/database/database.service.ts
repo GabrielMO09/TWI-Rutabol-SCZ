@@ -3,42 +3,28 @@ import type { OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 import { Pool } from 'pg';
 import type { PoolClient, QueryResult, QueryResultRow } from 'pg';
 
-const REQUIRED = ['DB_HOST', 'DB_PORT', 'DB_NAME', 'DB_APP_USER', 'DB_APP_PASSWORD'] as const;
-
-@Injectable()
-export class DatabaseService implements OnModuleInit, OnModuleDestroy {
-  private readonly logger = new Logger(DatabaseService.name);
+/** Una base de datos PostgreSQL: un pool con `query` y `tx`. */
+export class Db {
   private readonly pool: Pool;
 
-  constructor() {
-    const missing = REQUIRED.filter((key) => !process.env[key]);
-    if (missing.length) {
-      throw new Error(`Faltan variables en backend/.env: ${missing.join(', ')}`);
-    }
+  constructor(readonly name: string, config: { database: string; user: string; password: string }, onError: (m: string) => void) {
     this.pool = new Pool({
       host: process.env.DB_HOST,
       port: Number(process.env.DB_PORT),
-      database: process.env.DB_NAME,
-      user: process.env.DB_APP_USER,
-      password: process.env.DB_APP_PASSWORD,
+      ...config,
       max: 10,
       connectionTimeoutMillis: 5000,
       statement_timeout: 10000,
       ssl: process.env.DB_SSL === 'true' ? { rejectUnauthorized: true } : undefined,
     });
-    this.pool.on('error', (error) => this.logger.error(`Conexión inactiva con error: ${error.message}`));
+    this.pool.on('error', (error) => onError(`Conexión inactiva con error (${name}): ${error.message}`));
   }
 
-  async onModuleInit() {
-    try {
-      await this.pool.query('SELECT 1');
-      this.logger.log(`PostgreSQL conectado (${process.env.DB_NAME}).`);
-    } catch (error) {
-      throw new Error(`No se pudo conectar a PostgreSQL: ${error instanceof Error ? error.message : error}`);
-    }
+  ping() {
+    return this.pool.query('SELECT 1');
   }
 
-  onModuleDestroy() {
+  end() {
     return this.pool.end();
   }
 
@@ -61,5 +47,60 @@ export class DatabaseService implements OnModuleInit, OnModuleDestroy {
     } finally {
       client.release();
     }
+  }
+}
+
+const logger = new Logger('DatabaseService');
+const REQUIRED = [
+  'DB_HOST', 'DB_PORT', 'DB_NAME', 'DB_APP_USER', 'DB_APP_PASSWORD',
+  'DB_ACADEMICO_NAME', 'DB_ACADEMICO_USER', 'DB_ACADEMICO_PASSWORD',
+  'DB_TRANSPORTE_NAME', 'DB_TRANSPORTE_USER', 'DB_TRANSPORTE_PASSWORD',
+] as const;
+
+/**
+ * Tres bases en un mismo servidor: la propia (`query`/`tx`, operación de Rutabol-SCZ),
+ * `academic` (registro académico) y `transport` (registro de transporte). Entre bases no hay FK.
+ */
+@Injectable()
+export class DatabaseService extends Db implements OnModuleInit, OnModuleDestroy {
+  readonly academic: Db;
+  readonly transport: Db;
+
+  constructor() {
+    const missing = REQUIRED.filter((key) => !process.env[key]);
+    if (missing.length) {
+      throw new Error(`Faltan variables en backend/.env: ${missing.join(', ')}`);
+    }
+    const log = (message: string) => logger.error(message);
+    super('rutabol', {
+      database: process.env.DB_NAME!, user: process.env.DB_APP_USER!, password: process.env.DB_APP_PASSWORD!,
+    }, log);
+    this.academic = new Db('académico', {
+      database: process.env.DB_ACADEMICO_NAME!, user: process.env.DB_ACADEMICO_USER!,
+      password: process.env.DB_ACADEMICO_PASSWORD!,
+    }, log);
+    this.transport = new Db('transporte', {
+      database: process.env.DB_TRANSPORTE_NAME!, user: process.env.DB_TRANSPORTE_USER!,
+      password: process.env.DB_TRANSPORTE_PASSWORD!,
+    }, log);
+  }
+
+  /** Las tres bases, para la comprobación de salud. */
+  get all(): Db[] {
+    return [this, this.academic, this.transport];
+  }
+
+  async onModuleInit() {
+    try {
+      await Promise.all(this.all.map((db) => db.ping()));
+      logger.log('PostgreSQL conectado: rutabol, registro académico y registro de transporte.');
+    } catch (error) {
+      throw new Error(`No se pudo conectar a PostgreSQL: ${error instanceof Error ? error.message : error}`);
+    }
+  }
+
+  async onModuleDestroy() {
+    await Promise.all([this.academic.end(), this.transport.end()]);
+    await this.end();
   }
 }

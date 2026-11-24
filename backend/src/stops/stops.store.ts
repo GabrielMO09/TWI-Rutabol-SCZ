@@ -12,21 +12,15 @@ export interface Stop {
   active: boolean;
 }
 
-type StopDescription = Pick<Stop, 'id' | 'name' | 'reference' | 'active'>;
-
 interface StopRow {
+  id: string;
   line: string;
+  name: string;
+  reference: string;
   lat: number;
   lng: number;
   order: number;
-  description: string;
-}
-
-const ROUTE_NAME = 'Paradas gestionadas';
-
-export function stopDescription(stop: Stop): string {
-  const { id, name, reference, active } = stop;
-  return JSON.stringify({ id, name, reference, active });
+  active: boolean;
 }
 
 @Injectable()
@@ -36,25 +30,18 @@ export class StopsStore {
 
   constructor(@Optional() private readonly db?: DatabaseService) {}
 
+  /** Las paradas viven en registro_transporte.parada. */
   async hydrate() {
     if (!this.db) return;
-    const { rows } = await this.db.query<StopRow>(
-      `SELECT l.numero AS line, p.latitud::float8 AS lat, p.longitud::float8 AS lng,
-              p.orden AS "order", p.descripcion AS description
-         FROM rutabol.punto_ruta p
-         JOIN rutabol.ruta r ON r.id_ruta = p.id_ruta
-         JOIN rutabol.linea l ON l.id_linea = r.id_linea
-        WHERE r.nombre = $1 AND r.sentido = $2 AND p.tipo = $3`,
-      [ROUTE_NAME, 'circular', 'parada'],
+    const { rows } = await this.db.transport.query<StopRow>(
+      `SELECT p.id_parada AS id, l.numero AS line, p.nombre AS name, p.referencia AS reference,
+              p.latitud::float8 AS lat, p.longitud::float8 AS lng, p.orden AS "order", p.activa AS active
+         FROM transporte.parada p
+         JOIN transporte.linea l ON l.id_linea = p.id_linea`,
     );
-    const loaded = rows.map(({ description, ...point }): Stop => {
-      const { id, name, reference, active } = JSON.parse(description) as StopDescription;
-      return { id, name, reference, active, ...point };
-    });
-
     this.stops.clear();
     this.saved.clear();
-    for (const stop of loaded) this.stops.set(stop.id, stop);
+    for (const stop of rows) this.stops.set(stop.id, stop);
     for (const [line, stops] of this.byLine()) this.saved.set(line, JSON.stringify(stops));
   }
 
@@ -70,34 +57,30 @@ export class StopsStore {
     });
     if (!changes.length) return;
 
-    await db.tx(async (client) => {
+    await db.transport.tx(async (client) => {
       for (const { line, stops } of changes) {
-        const route = await client.query<{ id: string }>(
-          `INSERT INTO rutabol.ruta (id_linea, nombre, origen, destino, sentido)
-           SELECT id_linea, $2, $3, $4, $5 FROM rutabol.linea WHERE numero = $1
-           ON CONFLICT (id_linea, nombre, sentido) DO UPDATE SET nombre = EXCLUDED.nombre
-           RETURNING id_ruta::text AS id`,
-          [line, ROUTE_NAME, 'Inicio de línea', 'Final de línea', 'circular'],
+        const found = await client.query<{ id: string }>(
+          'SELECT id_linea::text AS id FROM transporte.linea WHERE numero = $1', [line],
         );
-        const routeId = route.rows[0]?.id;
-        if (!routeId) throw new Error(`No se encontró la línea ${line} al guardar sus paradas.`);
+        const lineId = found.rows[0]?.id;
+        if (!lineId) throw new Error(`No se encontró la línea ${line} al guardar sus paradas.`);
 
-        await client.query(
-          'DELETE FROM rutabol.punto_ruta WHERE id_ruta = $1 AND tipo = $2',
-          [routeId, 'parada'],
-        );
+        await client.query('DELETE FROM transporte.parada WHERE id_linea = $1', [lineId]);
         if (stops.length) {
           await client.query(
-            `INSERT INTO rutabol.punto_ruta (id_ruta, orden, latitud, longitud, tipo, descripcion)
-             SELECT $1::bigint, p.orden, p.lat, p.lng, $2, p.descripcion
-               FROM unnest($3::integer[], $4::numeric[], $5::numeric[], $6::text[])
-                    AS p(orden, lat, lng, descripcion)`,
+            `INSERT INTO transporte.parada (id_parada, id_linea, nombre, referencia, latitud, longitud, orden, activa)
+             SELECT p.id, $1::bigint, p.name, p.reference, p.lat, p.lng, p.ord, p.active
+               FROM unnest($2::text[], $3::text[], $4::text[], $5::numeric[], $6::numeric[], $7::integer[], $8::boolean[])
+                    AS p(id, name, reference, lat, lng, ord, active)`,
             [
-              routeId, 'parada',
-              stops.map((stop) => stop.order),
+              lineId,
+              stops.map((stop) => stop.id),
+              stops.map((stop) => stop.name),
+              stops.map((stop) => stop.reference),
               stops.map((stop) => stop.lat),
               stops.map((stop) => stop.lng),
-              stops.map(stopDescription),
+              stops.map((stop) => stop.order),
+              stops.map((stop) => stop.active),
             ],
           );
         }

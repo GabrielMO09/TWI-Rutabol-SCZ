@@ -72,8 +72,10 @@ export class PassengerController {
   }
 
   @Post('accreditation/request')
-  requestAccreditation(@Req() request: AuthRequest, @Body() body: unknown) {
-    return this.accreditation.request(request.profile.userId, body);
+  async requestAccreditation(@Req() request: AuthRequest, @Body() body: unknown) {
+    const fields = this.accreditation.prepare(request.profile.userId, body);
+    await this.accreditation.verifyEnrollment(fields);
+    return this.accreditation.startRequest(request.profile.userId, fields);
   }
 
   @Post('accreditation/confirm-email')

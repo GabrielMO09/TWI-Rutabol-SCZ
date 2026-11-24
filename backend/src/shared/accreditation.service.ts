@@ -45,7 +45,8 @@ export class AccreditationService {
       throw new BadRequestException('El código RUDE debe tener entre 8 y 20 caracteres alfanuméricos.');
     }
     if (type === 'universitario' &&
-      (!institution.emailDomain || code.split('@')[1] !== institution.emailDomain)) {
+      (!institution.emailDomain ||
+        ![institution.emailDomain, ...institution.extraDomains].includes(code.split('@')[1]))) {
       throw new BadRequestException(institution.emailDomain
         ? `Usa tu correo institucional @${institution.emailDomain}.`
         : 'La universidad seleccionada no tiene un dominio de correo configurado.');
@@ -75,6 +76,18 @@ export class AccreditationService {
     return {
       type, institution: institution.name, institutionId: institution.id, code, institutionalCode,
     };
+  }
+
+  /** El estudiante debe existir y estar vigente en el registro académico de su institución. */
+  async verifyEnrollment(fields: RequestFields): Promise<void> {
+    const level = fields.type === 'escolar' ? 'secundario' : 'universitario';
+    const key = fields.type === 'escolar' ? fields.code : fields.code.toLowerCase();
+    if (!fields.institutionId ||
+      !await this.institutions.enrolled(fields.institutionId, level, key, fields.institutionalCode)) {
+      throw new BadRequestException(
+        'No encontramos tus datos vigentes en el registro académico de la institución. Revisa tu código y vuelve a intentar.',
+      );
+    }
   }
 
   effective(item: Accreditation): Accreditation {
@@ -116,14 +129,19 @@ export class AccreditationService {
     return 'Tarifa general';
   }
 
-  request(userId: string, input: unknown) {
+  /** Valida la solicitud de un usuario existente (sin crearla ni consultar el registro académico). */
+  prepare(userId: string, input: unknown): RequestFields {
     const user = this.memory.users.get(userId);
     if (!user) throw new NotFoundException('Usuario no encontrado.');
     const type = user.profile.category;
     if (type !== 'escolar' && type !== 'universitario') {
       throw new BadRequestException('Tu categoría no requiere acreditación.');
     }
-    return this.startRequest(userId, this.prepareRequest(type, input, userId));
+    return this.prepareRequest(type, input, userId);
+  }
+
+  request(userId: string, input: unknown) {
+    return this.startRequest(userId, this.prepare(userId, input));
   }
 
   startRequest(userId: string, fields: RequestFields): {

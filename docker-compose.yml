@@ -1,4 +1,5 @@
-# PostgreSQL de Rutabol-SCZ con volumen persistente.
+# PostgreSQL de Rutabol-SCZ con volumen persistente y TRES bases en un mismo servidor:
+#   rutabol_scz (operacion), registro_academico (instituciones y estudiantes), registro_transporte (lineas, rutas, paradas).
 #   docker compose up -d            -> levanta la BD (puerto 5434, no choca con un PG local en 5432)
 #   docker compose restart postgres -> los datos sobreviven (volumen "pgdata")
 #   docker compose down -v          -> BORRA el volumen y los datos
@@ -16,14 +17,19 @@ services:
       POSTGRES_PASSWORD: ${DB_OWNER_PASSWORD:-owner_dev_pass}
       DB_APP_USER: ${DB_APP_USER:-rutabol_app}
       DB_APP_PASSWORD: ${DB_APP_PASSWORD:-app_dev_pass}
+      DB_ACADEMICO_NAME: ${DB_ACADEMICO_NAME:-registro_academico}
+      DB_ACADEMICO_USER: ${DB_ACADEMICO_USER:-academico_app}
+      DB_ACADEMICO_PASSWORD: ${DB_ACADEMICO_PASSWORD:-academico_dev_pass}
+      DB_TRANSPORTE_NAME: ${DB_TRANSPORTE_NAME:-registro_transporte}
+      DB_TRANSPORTE_USER: ${DB_TRANSPORTE_USER:-transporte_app}
+      DB_TRANSPORTE_PASSWORD: ${DB_TRANSPORTE_PASSWORD:-transporte_dev_pass}
     ports:
       - "${DB_PORT:-5434}:5432"
     volumes:
       - pgdata:/var/lib/postgresql
-      # Solo se ejecutan en el PRIMER arranque (volumen vacio), en orden alfabetico.
-      - ./bd/00_app_role.sh:/docker-entrypoint-initdb.d/00_app_role.sh:ro
-      - ./bd/01_esquema.sql:/docker-entrypoint-initdb.d/10_schema.sql:ro
-      - ./bd/02_datos_prueba.sql:/docker-entrypoint-initdb.d/20_datos_prueba.sql:ro
+      # Solo se ejecuta en el PRIMER arranque (volumen vacio): crea las 3 bases y carga bd/<base>/01_esquema.sql + 02_datos.sql.
+      - ./bd:/bd:ro
+      - ./bd/00_init_bases.sh:/docker-entrypoint-initdb.d/00_init_bases.sh:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
       interval: 5s
@@ -57,6 +63,12 @@ services:
       DB_NAME: ${DB_NAME:-rutabol_scz}
       DB_APP_USER: ${DB_APP_USER:-rutabol_app}
       DB_APP_PASSWORD: ${DB_APP_PASSWORD:-app_dev_pass}
+      DB_ACADEMICO_NAME: ${DB_ACADEMICO_NAME:-registro_academico}
+      DB_ACADEMICO_USER: ${DB_ACADEMICO_USER:-academico_app}
+      DB_ACADEMICO_PASSWORD: ${DB_ACADEMICO_PASSWORD:-academico_dev_pass}
+      DB_TRANSPORTE_NAME: ${DB_TRANSPORTE_NAME:-registro_transporte}
+      DB_TRANSPORTE_USER: ${DB_TRANSPORTE_USER:-transporte_app}
+      DB_TRANSPORTE_PASSWORD: ${DB_TRANSPORTE_PASSWORD:-transporte_dev_pass}
       DB_SSL: "${DB_SSL:-false}"
       FRONTEND_URL: ${FRONTEND_URL:-http://localhost:3000}
       TRUST_PROXY: "${TRUST_PROXY:-}"

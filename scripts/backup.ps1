@@ -14,6 +14,8 @@ $scriptDir = if ($PSScriptRoot) { $PSScriptRoot } else { Split-Path -Parent $MyI
 if (-not $BackupDir) { $BackupDir = Join-Path (Split-Path -Parent $scriptDir) 'backups' }
 $repoRoot = Split-Path -Parent $scriptDir
 $dbName = 'rutabol_scz'
+# Las tres bases del sistema; la operacion va primero y manda sobre DB_NAME.
+$databases = @($dbName, 'registro_academico', 'registro_transporte')
 $logPath = $null
 $partialPath = $null
 $exitCode = 0
@@ -88,31 +90,35 @@ try {
     }
     if (-not $env:PGCONNECT_TIMEOUT) { $env:PGCONNECT_TIMEOUT = '5' }
 
-    # Publicar el archivo solo despues de comprobar que el indice se puede leer.
+    # Publicar cada archivo solo despues de comprobar que el indice se puede leer.
     $stamp = [DateTime]::UtcNow.ToString("yyyyMMdd'T'HHmmssfff'Z'")
     $suffix = [Guid]::NewGuid().ToString('N').Substring(0, 8)
-    $fileName = "${dbName}_${stamp}_${suffix}.dump"
-    $finalPath = Join-Path $backupPath $fileName
-    $partialPath = "$finalPath.partial"
+    $published = @()
+    foreach ($name in $databases) {
+        $fileName = "${name}_${stamp}_${suffix}.dump"
+        $finalPath = Join-Path $backupPath $fileName
+        $partialPath = "$finalPath.partial"
 
-    & $pgDump -w -h $dbHost -p $dbPort -U $owner -d $dbName -Fc -f $partialPath 2>$null
-    if ($LASTEXITCODE -ne 0) {
-        throw "pg_dump fallo (codigo $LASTEXITCODE). Revise conexion, permisos y espacio."
+        & $pgDump -w -h $dbHost -p $dbPort -U $owner -d $name -Fc -f $partialPath 2>$null
+        if ($LASTEXITCODE -ne 0) {
+            throw "pg_dump de $name fallo (codigo $LASTEXITCODE). Revise conexion, permisos y espacio."
+        }
+        & $pgRestore --list $partialPath 2>$null | Out-Null
+        if ($LASTEXITCODE -ne 0) {
+            throw "No se pudo leer el indice del respaldo de $name (codigo $LASTEXITCODE)."
+        }
+        [System.IO.File]::Move($partialPath, $finalPath)
+        $partialPath = $null
+        Write-BackupLog "COPIA archivo=$fileName bytes=$((Get-Item -LiteralPath $finalPath).Length)"
+        $published += $finalPath
     }
-    & $pgRestore --list $partialPath 2>$null | Out-Null
-    if ($LASTEXITCODE -ne 0) {
-        throw "No se pudo leer el indice del respaldo (codigo $LASTEXITCODE)."
-    }
-    [System.IO.File]::Move($partialPath, $finalPath)
-    $partialPath = $null
-    Write-BackupLog "COPIA archivo=$fileName bytes=$((Get-Item -LiteralPath $finalPath).Length)"
 
     # Aplicar la retencion solo despues de publicar una copia nueva.
     $cutoff = [DateTime]::UtcNow.AddDays(-$RetentionDays)
-    $expired = Get-ChildItem -LiteralPath $backupPath -File -Filter 'rutabol_scz_*.dump' |
+    $expired = Get-ChildItem -LiteralPath $backupPath -File -Filter '*_*.dump' |
         Where-Object {
-            $_.Name -cmatch '^rutabol_scz_\d{8}T\d{9}Z_[0-9a-f]{8}\.dump$' -and
-            $_.LastWriteTimeUtc -lt $cutoff -and $_.FullName -ne $finalPath
+            $_.Name -cmatch '^(rutabol_scz|registro_academico|registro_transporte)_\d{8}T\d{9}Z_[0-9a-f]{8}\.dump$' -and
+            $_.LastWriteTimeUtc -lt $cutoff -and $published -notcontains $_.FullName
         }
     foreach ($file in $expired) {
         Remove-Item -LiteralPath $file.FullName
@@ -120,7 +126,7 @@ try {
     }
 
     Write-BackupLog 'OK'
-    Write-Output $finalPath
+    $published | Write-Output
 } catch {
     $exitCode = 1
     $message = $_.Exception.Message

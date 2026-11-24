@@ -8,7 +8,7 @@ export class HealthController {
   @Get('db')
   async database() {
     try {
-      await this.db.query('SELECT 1');
+      await Promise.all(this.db.all.map((db) => db.ping()));
       return { db: 'ok' };
     } catch {
       throw new ServiceUnavailableException('Base de datos no disponible.');

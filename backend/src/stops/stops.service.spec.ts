@@ -3,7 +3,7 @@ import type { DatabaseService } from '../database/database.service';
 import type { Profile } from '../micros/models';
 import { fixture } from '../test-support';
 import { StopsService } from './stops.service';
-import { StopsStore, stopDescription } from './stops.store';
+import { StopsStore } from './stops.store';
 
 describe('Paradas', () => {
   const actor: Profile = {
@@ -69,7 +69,6 @@ describe('Paradas', () => {
     [{ order: 1.5 }],
     [{ active: 'false' }],
     [{ name: ' ' }],
-    [{ name: 'n'.repeat(120), reference: 'r'.repeat(180) }],
   ])('rechaza campos inválidos (%j) y audita el error', (patch) => {
     expect(() => service.create(actor, { ...input, ...patch })).toThrow(BadRequestException);
     expect(context.memory.audit.at(-1)).toMatchObject({ action: 'parada.crear', result: 'error' });
@@ -88,10 +87,7 @@ describe('Paradas', () => {
 
   it('hidrata los datos guardados y reintenta una escritura fallida', async () => {
     const saved = service.create(actor, input);
-    const query = jest.fn().mockResolvedValue({
-      rows: [{ line: saved.line, lat: saved.lat, lng: saved.lng, order: saved.order,
-        description: stopDescription(saved) }],
-    });
+    const query = jest.fn().mockResolvedValue({ rows: [{ ...saved }] });
     const write = jest.fn()
       .mockResolvedValueOnce({ rows: [{ id: '12' }] })
       .mockResolvedValueOnce({ rows: [] })
@@ -99,7 +95,7 @@ describe('Paradas', () => {
       .mockResolvedValue({ rows: [{ id: '12' }] });
     const tx = jest.fn((work: (client: { query: typeof write }) => Promise<void>) =>
       work({ query: write }));
-    const restored = new StopsStore({ query, tx } as unknown as DatabaseService);
+    const restored = new StopsStore({ transport: { query, tx } } as unknown as DatabaseService);
     const restoredService = new StopsService(context.memory, context.audit, restored);
 
     await restored.hydrate();
@@ -107,11 +103,11 @@ describe('Paradas', () => {
     await restored.run();
     expect(tx).not.toHaveBeenCalled();
 
-    const changed = restoredService.update(actor, saved.id, { active: false });
+    restoredService.update(actor, saved.id, { active: false });
     await expect(restored.run()).rejects.toThrow('escritura fallida');
     await restored.run();
     expect(write.mock.calls.at(-1)?.[1]).toEqual([
-      '12', 'parada', [saved.order], [saved.lat], [saved.lng], [stopDescription(changed)],
+      '12', [saved.id], [saved.name], [saved.reference], [saved.lat], [saved.lng], [saved.order], [false],
     ]);
     await restored.run();
     expect(tx).toHaveBeenCalledTimes(2);

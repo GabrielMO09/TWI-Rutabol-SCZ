@@ -88,6 +88,7 @@ export class AuthService {
     const request = { institution: body.institution, code, institutionalCode: body.institutionalCode };
     const prepared = category === 'general'
       ? undefined : this.accreditation.prepareRequest(category, request);
+    if (prepared) await this.accreditation.verifyEnrollment(prepared);
     const user = this.memory.addUser({
       userId, role: 'pasajero', name, category, code, photo, status: 'activo',
       ci, email, phone: `+591${localPhone}`, acceptedTermsAt: Date.now(),

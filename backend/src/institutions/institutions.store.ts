@@ -9,10 +9,12 @@ export interface Institution {
   name: string;
   address: string | null;
   emailDomain: string | null;
+  /** Otros dominios válidos de la misma universidad (ej. upds.net.bo). Solo lectura desde el registro. */
+  extraDomains: string[];
   enabled: boolean;
 }
 
-type InstitutionFields = Omit<Institution, 'id'>;
+type InstitutionFields = Omit<Institution, 'id' | 'extraDomains'>;
 
 interface InstitutionRow {
   id_institucion: string;
@@ -20,6 +22,7 @@ interface InstitutionRow {
   nombre: string;
   direccion: string | null;
   dominio_correo: string | null;
+  dominios_alternos: string[];
   estado: 'habilitada' | 'deshabilitada';
 }
 
@@ -30,6 +33,7 @@ function fromRow(row: InstitutionRow): Institution {
     name: row.nombre,
     address: row.direccion,
     emailDomain: row.dominio_correo?.replace(/^@/, '').toLowerCase() || null,
+    extraDomains: row.dominios_alternos.map((domain) => domain.replace(/^@/, '').toLowerCase()),
     enabled: row.estado === 'habilitada',
   };
 }
@@ -43,15 +47,38 @@ export class InstitutionsStore {
 
   async hydrate(): Promise<void> {
     if (!this.db) return;
-    const result = await this.db.query<InstitutionRow>(
-      `SELECT id_institucion,tipo,nombre,direccion,dominio_correo,estado
-         FROM rutabol.institucion_educativa`,
+    const result = await this.db.academic.query<InstitutionRow>(
+      `SELECT id_institucion,tipo,nombre,direccion,dominio_correo,dominios_alternos,estado
+         FROM academico.institucion_educativa`,
     );
     this.rows.clear();
     for (const row of result.rows) {
       const item = fromRow(row);
       this.rows.set(item.id, item);
     }
+  }
+
+  /**
+   * Consulta el registro académico: ¿el estudiante existe en esa institución y está vigente?
+   * Rutabol no copia el registro; solo pregunta. Sin base configurada (pruebas) no hay registro que consultar.
+   */
+  async enrolled(
+    institutionId: string, level: 'secundario' | 'universitario', key: string, institutionalCode?: string,
+  ): Promise<boolean> {
+    if (!this.db) return true;
+    const result = level === 'universitario'
+      ? await this.db.academic.query(
+        `SELECT 1 FROM academico.estudiante
+          WHERE id_institucion=$1 AND nivel='universitario' AND estado='vigente'
+            AND lower(correo_institucional)=lower($2) AND lower(codigo_institucional)=lower($3)`,
+        [institutionId, key, institutionalCode ?? ''],
+      )
+      : await this.db.academic.query(
+        `SELECT 1 FROM academico.estudiante
+          WHERE id_institucion=$1 AND nivel='secundario' AND estado='vigente' AND upper(rude)=upper($2)`,
+        [institutionId, key],
+      );
+    return (result.rowCount ?? 0) > 0;
   }
 
   list(): Institution[] {
@@ -72,7 +99,7 @@ export class InstitutionsStore {
     }
 
     if (!this.db) {
-      const item = { ...fields, id: id ?? String(++this.nextId) };
+      const item = { extraDomains: [], ...this.rows.get(id ?? ''), ...fields, id: id ?? String(++this.nextId) };
       this.rows.set(item.id, item);
       return { ...item };
     }
@@ -86,20 +113,20 @@ export class InstitutionsStore {
     ];
     try {
       const result = id === undefined
-        ? await this.db.query<InstitutionRow>(
-          `INSERT INTO rutabol.institucion_educativa(nombre,tipo,direccion,dominio_correo,estado)
+        ? await this.db.academic.query<InstitutionRow>(
+          `INSERT INTO academico.institucion_educativa(nombre,tipo,direccion,dominio_correo,estado)
            VALUES($1,$2,$3,$4,$5)
-           RETURNING id_institucion,tipo,nombre,direccion,dominio_correo,estado`,
+           RETURNING id_institucion,tipo,nombre,direccion,dominio_correo,dominios_alternos,estado`,
           params,
         )
-        : await this.db.query<InstitutionRow>(
-          `UPDATE rutabol.institucion_educativa i
+        : await this.db.academic.query<InstitutionRow>(
+          `UPDATE academico.institucion_educativa i
               SET nombre=$1,tipo=$2,direccion=$3,dominio_correo=$4,estado=$5
             WHERE i.id_institucion=$6
               AND (i.tipo=$2 OR NOT EXISTS (
-                SELECT 1 FROM rutabol.estudiante e WHERE e.id_institucion=i.id_institucion
+                SELECT 1 FROM academico.estudiante e WHERE e.id_institucion=i.id_institucion
               ))
-           RETURNING id_institucion,tipo,nombre,direccion,dominio_correo,estado`,
+           RETURNING id_institucion,tipo,nombre,direccion,dominio_correo,dominios_alternos,estado`,
           [...params, id],
         );
       const row = result.rows[0];

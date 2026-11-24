@@ -12,13 +12,21 @@ class FakeDb {
   query = (sql: string, params: unknown[] = []) => {
     this.calls.push({ sql, params });
     if (sql.includes('count(*)::int')) return Promise.resolve({ rows: [{ n: 0 }] });
-    if (sql.includes('SELECT id_institucion') || sql.includes('INSERT INTO rutabol.institucion_educativa')) return Promise.resolve({ rows: [{ id_institucion: 1 }] });
     if (sql.includes('FROM rutabol.usuario u')) return Promise.resolve({ rows: this.users });
     if (sql.includes('FROM rutabol.sesion s')) return Promise.resolve({ rows: this.sessions });
     return Promise.resolve({ rows: [] });
   };
 
   tx = <T>(work: (client: { query: FakeDb['query'] }) => Promise<T>) => work({ query: this.query });
+
+  // Las bases de los registros usan el mismo registro de llamadas; los SQL se distinguen por su esquema.
+  get transport() {
+    return { query: (sql: string, params?: unknown[]) => this.query(sql, params), tx: this.tx };
+  }
+
+  get academic() {
+    return this.transport;
+  }
 
   count(fragment: string) {
     return this.calls.filter((call) => call.sql.includes(fragment)).length;
@@ -104,8 +112,10 @@ describe('PersistenceService', () => {
   it('con la BD vacía guarda líneas, unidades, conductores y la tarifa inicial', async () => {
     const { ctx, db, persistence } = await setup();
     await persistence.hydrate();
+    expect(db.count('INSERT INTO transporte.linea')).toBe(3);
+    expect(db.count('INSERT INTO transporte.punto_ruta')).toBe(3);
+    expect(db.count('INSERT INTO transporte.unidad_transporte')).toBe(5);
     expect(db.count('INSERT INTO rutabol.linea')).toBe(3);
-    expect(db.count('INSERT INTO rutabol.punto_ruta')).toBe(3);
     expect(db.count('INSERT INTO rutabol.unidad_transporte')).toBe(5);
     expect(db.count('INSERT INTO rutabol.conductor')).toBe(3);
     expect(db.count('INSERT INTO rutabol.asignacion_conductor')).toBe(3);
@@ -120,7 +130,9 @@ describe('PersistenceService', () => {
     db.calls.length = 0;
     ctx.control.updateBus(actor, '17-045', { plate: '9999-ZZZ' });
     await persistence.sync();
+    expect(db.count('INSERT INTO transporte.unidad_transporte')).toBe(1);
     expect(db.count('INSERT INTO rutabol.unidad_transporte')).toBe(1);
+    expect(db.count('INSERT INTO transporte.linea')).toBe(0);
     expect(db.count('INSERT INTO rutabol.linea')).toBe(0);
     db.calls.length = 0;
     ctx.fares.update(actor, { general: 4, reason: 'nueva disposicion oficial' });
@@ -135,11 +147,11 @@ describe('PersistenceService', () => {
     const since = new Date('2026-01-01T04:00:00Z');
     db.query = ((sql: string) => {
       db.calls.push({ sql, params: [] });
-      if (sql.includes('FROM rutabol.linea l')) {
+      if (sql.includes('FROM transporte.linea l')) {
         return Promise.resolve({ rows: [{ numero: '90', nombre: 'Línea 90', estado: 'activa', puntos: [[-17.78, -63.18], [-17.79, -63.17]] }] });
       }
-      if (sql.includes('FROM rutabol.unidad_transporte u')) {
-        return Promise.resolve({ rows: [{ linea: '90', numero_interno: '001', placa: '1111-AAA', capacidad_maxima: 21, estado: 'habilitada', estado_operativo: 'activo' }] });
+      if (sql.includes('FROM transporte.unidad_transporte u')) {
+        return Promise.resolve({ rows: [{ linea: '90', numero_interno: '001', placa: '1111-AAA', capacidad_maxima: 21, estado: 'habilitada' }] });
       }
       if (sql.includes('FROM rutabol.tarifa t')) {
         return Promise.resolve({ rows: [

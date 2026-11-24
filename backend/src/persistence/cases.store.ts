@@ -23,15 +23,14 @@ export class CasesStore {
       rude: string | null; correo_institucional: string | null; estado: Accreditation['status'];
       correo_verificado: boolean; vigencia_hasta: Date | null; nota: string | null;
       fecha_solicitud: Date; fecha_resolucion: Date | null;
-      id_institucion: string; codigo_institucional: string | null;
+      id_institucion: string | null; codigo_institucional: string | null;
     }>(
-      `SELECT DISTINCT ON (e.id_estudiante) s.ref_app,us.identificador,e.nivel,i.nombre AS institucion,e.rude,
+      `SELECT DISTINCT ON (e.id_estudiante) s.ref_app,us.identificador,e.nivel,e.institucion_nombre AS institucion,e.rude,
               e.id_institucion,e.codigo_institucional,e.correo_institucional,s.estado,s.correo_verificado,s.vigencia_hasta,s.nota,
               s.fecha_solicitud,s.fecha_resolucion
          FROM rutabol.solicitud_validacion s
          JOIN rutabol.estudiante e ON e.id_estudiante=s.id_estudiante
          JOIN rutabol.usuario us ON us.id_usuario=e.id_usuario
-         JOIN rutabol.institucion_educativa i ON i.id_institucion=e.id_institucion
         ORDER BY e.id_estudiante,s.fecha_solicitud DESC,s.id_solicitud DESC`,
     );
     for (const row of rows.rows) {
@@ -42,7 +41,7 @@ export class CasesStore {
       const item: Accreditation = {
         id: row.ref_app, userId: row.identificador,
         type: row.nivel === 'secundario' ? 'escolar' : 'universitario', institution: row.institucion,
-        institutionId: String(row.id_institucion),
+        ...(row.id_institucion === null ? {} : { institutionId: String(row.id_institucion) }),
         ...(row.codigo_institucional ? { institutionalCode: row.codigo_institucional } : {}),
         code: row.rude ?? row.correo_institucional ?? '', status: row.estado,
         emailVerified: row.correo_verificado, requestedAt: row.fecha_solicitud.getTime(),
@@ -114,32 +113,18 @@ export class CasesStore {
         // no vuelve a validar contra un dominio que pudo cambiar desde el alta.
         if (!this.accreditations.has(item.id)) {
           const level = item.type === 'escolar' ? 'secundario' : 'universitario';
-          const kind = item.type === 'escolar' ? 'secundaria' : 'universitaria';
-          const domain = item.type === 'universitario' ? item.code.split('@')[1] ?? null : null;
-          let institution = item.institutionId;
-          if (institution === undefined) {
-            // Compatibilidad con datos de demostración y solicitudes anteriores al catálogo.
-            const found = await client.query<{ id_institucion: string }>(
-              `SELECT id_institucion FROM rutabol.institucion_educativa
-                WHERE tipo=$1 AND strpos(lower(nombre),lower($2))>0
-                ORDER BY (lower(nombre)=lower($2)) DESC,id_institucion LIMIT 1`,
-              [kind, item.institution],
-            );
-            institution = found.rows[0]?.id_institucion ?? (await client.query<{ id_institucion: string }>(
-              `INSERT INTO rutabol.institucion_educativa(nombre,tipo,dominio_correo,estado)
-               VALUES($1,$2,$3,'deshabilitada')
-               ON CONFLICT (nombre,tipo) DO UPDATE SET nombre=EXCLUDED.nombre RETURNING id_institucion`,
-              [item.institution.slice(0, 180), kind, domain],
-            )).rows[0].id_institucion;
-          }
+          // Solo el vínculo: el registro oficial del estudiante vive en registro_academico.
           await client.query(
-            `INSERT INTO rutabol.estudiante(id_usuario,id_institucion,nivel,rude,codigo_institucional,correo_institucional)
-             SELECT id_usuario,$2,$3,$4,$5,$6 FROM rutabol.usuario WHERE identificador=$1
-             ON CONFLICT (id_usuario) DO UPDATE SET id_institucion=EXCLUDED.id_institucion,nivel=EXCLUDED.nivel,
+            `INSERT INTO rutabol.estudiante(id_usuario,id_institucion,institucion_nombre,nivel,rude,
+                                            codigo_institucional,correo_institucional)
+             SELECT id_usuario,$2,$3,$4,$5,$6,$7 FROM rutabol.usuario WHERE identificador=$1
+             ON CONFLICT (id_usuario) DO UPDATE SET id_institucion=EXCLUDED.id_institucion,
+               institucion_nombre=EXCLUDED.institucion_nombre,nivel=EXCLUDED.nivel,
                rude=EXCLUDED.rude,codigo_institucional=EXCLUDED.codigo_institucional,
                correo_institucional=EXCLUDED.correo_institucional`,
             [
-              item.userId, institution, level, item.type === 'escolar' ? item.code : null,
+              item.userId, item.institutionId ?? null, item.institution.slice(0, 180), level,
+              item.type === 'escolar' ? item.code : null,
               item.type === 'universitario' ? item.institutionalCode ?? item.code : null,
               item.type === 'universitario' ? item.code : null,
             ],

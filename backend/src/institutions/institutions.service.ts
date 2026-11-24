@@ -48,6 +48,10 @@ export class InstitutionsService {
     return item;
   }
 
+  enrolled(...args: Parameters<InstitutionsStore['enrolled']>): Promise<boolean> {
+    return this.store.enrolled(...args);
+  }
+
   create(actor: Profile, input: unknown): Promise<Institution> {
     return this.mutate(actor, input, false);
   }

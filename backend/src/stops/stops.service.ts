@@ -7,7 +7,7 @@ import { MemoryService } from '../micros/memory.service';
 import type { Profile } from '../micros/models';
 import { booleanValue, integer, position } from '../ops/validation';
 import { AuditService } from '../shared/audit.service';
-import { StopsStore, stopDescription } from './stops.store';
+import { StopsStore } from './stops.store';
 import type { Stop } from './stops.store';
 
 @Injectable()
@@ -92,10 +92,6 @@ export class StopsService {
       id, line, name, reference, order, active,
       lat: Number(lat.toFixed(7)), lng: Number(lng.toFixed(7)),
     };
-    // La descripción de punto_ruta admite hasta 250 caracteres.
-    if (Array.from(stopDescription(stop)).length > 250) {
-      throw new BadRequestException('El nombre y la referencia ocupan demasiado espacio juntos.');
-    }
     for (const other of this.store.stops.values()) {
       if (other.id !== id && other.line === line && other.order === order) {
         throw new ConflictException('Ya existe una parada con ese orden en la línea.');

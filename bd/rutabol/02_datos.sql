@@ -48,22 +48,21 @@ INSERT INTO credencial_qr (id_credencial, id_usuario, expira_en, usado_en)
 SELECT 'demo-qr-estudiante', id_usuario, now() - interval '9 minutes', now() - interval '10 minutes'
 FROM usuario WHERE identificador = 'estudiante@upds.edu.bo';
 
--- Validación estudiantil.
+-- Validación estudiantil. El registro oficial está en registro_academico (bd/academico/02_datos.sql):
+-- aquí solo el vínculo. id_institucion 1 = UPDS y 20 = unidad educativa de prueba (orden de ese seed).
 INSERT INTO estudiante (
-  id_usuario, id_institucion, nivel, rude, codigo_institucional, correo_institucional
+  id_usuario, id_institucion, institucion_nombre, nivel, rude, codigo_institucional, correo_institucional
 )
-SELECT u.id_usuario, i.id_institucion, d.nivel, d.rude, d.codigo, d.correo
+SELECT u.id_usuario, d.id_institucion, d.institucion, d.nivel, d.rude, d.codigo, d.correo
 FROM (VALUES
-  ('estudiante@upds.edu.bo', 'Universidad Privada Domingo Savio (UPDS)', 'universitario',
+  ('estudiante@upds.edu.bo', 1, 'Universidad Privada Domingo Savio (UPDS)', 'universitario',
    NULL, 'estudiante@upds.edu.bo', 'estudiante@upds.edu.bo'),
-  ('rude80480123', 'Unidad educativa (por completar)', 'secundario',
+  ('rude80480123', 20, 'Unidad educativa (por completar)', 'secundario',
    'RUDE80480123', NULL, NULL),
-  ('lucia.vaca@upds.edu.bo', 'Universidad Privada Domingo Savio (UPDS)', 'universitario',
+  ('lucia.vaca@upds.edu.bo', 1, 'Universidad Privada Domingo Savio (UPDS)', 'universitario',
    NULL, 'lucia.vaca@upds.edu.bo', 'lucia.vaca@upds.edu.bo')
-) AS d(identificador, institucion, nivel, rude, codigo, correo)
-JOIN usuario u ON u.identificador = d.identificador
-JOIN institucion_educativa i ON i.nombre = d.institucion
-  AND i.tipo = CASE WHEN d.nivel = 'secundario' THEN 'secundaria' ELSE 'universitaria' END;
+) AS d(identificador, id_institucion, institucion, nivel, rude, codigo, correo)
+JOIN usuario u ON u.identificador = d.identificador;
 
 INSERT INTO solicitud_validacion (
   id_estudiante, fecha_solicitud, estado, ref_app, correo_verificado,
@@ -82,55 +81,20 @@ JOIN usuario u ON u.identificador = d.identificador
 JOIN estudiante e ON e.id_usuario = u.id_usuario
 JOIN usuario c ON c.identificador = 'control@rutabol.bo';
 
--- Líneas, recorridos y paradas en Santa Cruz de la Sierra.
+-- Referencias espejo de registro_transporte (bd/transporte/02_datos.sql): líneas y puntos del recorrido.
 INSERT INTO linea (numero, nombre) VALUES
   ('17', 'Línea 17 - Norte'),
   ('44', 'Línea 44 - Sur'),
   ('11', 'Línea 11 - Este');
 
-INSERT INTO ruta (id_linea, nombre, origen, destino, sentido)
-SELECT l.id_linea, l.nombre, 'Centro', d.destino, 'ida'
-FROM linea l
-JOIN (VALUES ('17', 'Zona norte'), ('44', 'Zona sur'), ('11', 'Zona este'))
-  AS d(numero, destino) ON d.numero = l.numero;
-
-INSERT INTO punto_ruta (id_ruta, orden, latitud, longitud, tipo, descripcion)
-SELECT r.id_ruta, d.orden, d.latitud, d.longitud,
-       CASE d.orden WHEN 1 THEN 'inicio' WHEN 4 THEN 'destino' ELSE 'parada' END,
-       d.descripcion
-FROM (VALUES
-  ('17', 1, -17.7834, -63.1821, 'Centro'),
-  ('17', 2, -17.7700, -63.1790, 'Norte intermedio'),
-  ('17', 3, -17.7560, -63.1760, 'Norte exterior'),
-  ('17', 4, -17.7420, -63.1730, 'Terminal de prueba norte'),
-  ('44', 1, -17.7834, -63.1821, 'Centro'),
-  ('44', 2, -17.7990, -63.1800, 'Sur intermedio'),
-  ('44', 3, -17.8150, -63.1760, 'Sur exterior'),
-  ('44', 4, -17.8310, -63.1720, 'Terminal de prueba sur'),
-  ('11', 1, -17.7834, -63.1821, 'Centro'),
-  ('11', 2, -17.7850, -63.1620, 'Este intermedio'),
-  ('11', 3, -17.7880, -63.1430, 'Este exterior'),
-  ('11', 4, -17.7900, -63.1260, 'Terminal de prueba este')
-) AS d(numero, orden, latitud, longitud, descripcion)
-JOIN linea l ON l.numero = d.numero
-JOIN ruta r ON r.id_linea = l.id_linea AND r.sentido = 'ida';
-
--- Formato que lee StopsStore para publicar las paradas.
-INSERT INTO ruta (id_linea, nombre, origen, destino, sentido)
-SELECT id_linea, 'Paradas gestionadas', origen, destino, 'circular'
-FROM ruta WHERE sentido = 'ida';
-
-INSERT INTO punto_ruta (id_ruta, orden, latitud, longitud, tipo, descripcion)
-SELECT gestionada.id_ruta, p.orden, p.latitud, p.longitud, 'parada',
-       json_build_object(
-         'id', 'DEMO-STOP-' || l.numero || '-' || p.orden,
-         'name', p.descripcion, 'reference', l.nombre, 'active', true
-       )::text
-FROM ruta gestionada
-JOIN linea l ON l.id_linea = gestionada.id_linea
-JOIN ruta recorrido ON recorrido.id_linea = l.id_linea AND recorrido.sentido = 'ida'
-JOIN punto_ruta p ON p.id_ruta = recorrido.id_ruta
-WHERE gestionada.nombre = 'Paradas gestionadas' AND p.tipo = 'parada';
+-- Puntos del recorrido solo para generar GPS e incidencias de prueba (el trazado oficial vive en registro_transporte).
+CREATE TEMP TABLE puntos(numero, orden, latitud, longitud) AS VALUES
+  ('17'::text, 1, -17.7834::numeric, -63.1821::numeric),
+  ('17', 2, -17.7700, -63.1790), ('17', 3, -17.7560, -63.1760), ('17', 4, -17.7420, -63.1730),
+  ('44', 1, -17.7834, -63.1821), ('44', 2, -17.7990, -63.1800),
+  ('44', 3, -17.8150, -63.1760), ('44', 4, -17.8310, -63.1720),
+  ('11', 1, -17.7834, -63.1821), ('11', 2, -17.7850, -63.1620),
+  ('11', 3, -17.7880, -63.1430), ('11', 4, -17.7900, -63.1260);
 
 -- Micros, conductores y viajes.
 INSERT INTO unidad_transporte (id_linea, numero_interno, placa, capacidad_maxima, estado_operativo)
@@ -156,24 +120,25 @@ JOIN linea l ON l.numero = split_part(u.codigo, '-', 1)
 JOIN unidad_transporte b ON b.id_linea = l.id_linea
   AND b.numero_interno = split_part(u.codigo, '-', 2);
 
-INSERT INTO viaje (id_ruta, id_asignacion, fecha_inicio, fecha_fin, estado)
-SELECT r.id_ruta, a.id_asignacion, now() - interval '1 day 1 hour',
+INSERT INTO viaje (id_linea, ruta_nombre, id_asignacion, fecha_inicio, fecha_fin, estado)
+SELECT b.id_linea, l.nombre, a.id_asignacion, now() - interval '1 day 1 hour',
        now() - interval '1 day', 'finalizado'
 FROM asignacion_conductor a
 JOIN unidad_transporte b ON b.id_unidad = a.id_unidad
-JOIN ruta r ON r.id_linea = b.id_linea AND r.sentido = 'ida';
+JOIN linea l ON l.id_linea = b.id_linea;
 
-INSERT INTO viaje (id_ruta, id_asignacion, fecha_inicio)
-SELECT r.id_ruta, a.id_asignacion, now() - interval '40 minutes'
+INSERT INTO viaje (id_linea, ruta_nombre, id_asignacion, fecha_inicio)
+SELECT b.id_linea, l.nombre, a.id_asignacion, now() - interval '40 minutes'
 FROM asignacion_conductor a
 JOIN unidad_transporte b ON b.id_unidad = a.id_unidad
-JOIN ruta r ON r.id_linea = b.id_linea AND r.sentido = 'ida';
+JOIN linea l ON l.id_linea = b.id_linea;
 
 INSERT INTO ubicacion_gps (id_viaje, latitud, longitud, fecha_hora, precision_m)
 SELECT v.id_viaje, p.latitud, p.longitud,
        v.fecha_inicio + (p.orden - 1) * interval '10 minutes', 8.00
 FROM viaje v
-JOIN punto_ruta p ON p.id_ruta = v.id_ruta
+JOIN linea l ON l.id_linea = v.id_linea
+JOIN puntos p ON p.numero = l.numero
 WHERE v.estado = 'finalizado' OR p.orden <= 2;
 
 INSERT INTO registro_ocupacion (
@@ -206,12 +171,11 @@ FROM (VALUES
    'El conductor reportó un bloqueo parcial de la vía.', interval '12 minutes', 'en_atencion')
 ) AS d(ref, numero, estado_viaje, tipo, severidad, descripcion, antiguedad, estado)
 JOIN linea l ON l.numero = d.numero
-JOIN ruta r ON r.id_linea = l.id_linea AND r.sentido = 'ida'
-JOIN viaje v ON v.id_ruta = r.id_ruta AND v.estado = d.estado_viaje
+JOIN viaje v ON v.id_linea = l.id_linea AND v.estado = d.estado_viaje
 JOIN asignacion_conductor a ON a.id_asignacion = v.id_asignacion
 JOIN unidad_transporte b ON b.id_unidad = a.id_unidad
 JOIN conductor c ON c.id_conductor = a.id_conductor
-JOIN punto_ruta p ON p.id_ruta = r.id_ruta AND p.orden = 2;
+JOIN puntos p ON p.numero = l.numero AND p.orden = 2;
 
 INSERT INTO historial_incidencia (id_incidencia, estado, id_usuario, fecha)
 SELECT id_incidencia, 'reportada', id_reportante, fecha
@@ -375,5 +339,4 @@ FROM reclamo r
 JOIN seguimiento_reclamo sg ON sg.id_reclamo = r.id_reclamo
 WHERE r.ref_app = 'DEMO-REC-TRAYECTO';
 
--- Revisado contra el esquema y los stores. Docker denegó el acceso al motor para la prueba de ejecución.
 COMMIT;
