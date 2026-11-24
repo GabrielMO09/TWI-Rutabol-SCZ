@@ -11,7 +11,8 @@ test("el pasajero ingresa a su panel con la cuenta demo", async ({ page }) => {
   await page.getByRole("button", { name: "Ingresar", exact: true }).click();
 
   await expect(page).toHaveURL("/pasajero");
-  const navigation = page.getByRole("navigation", { name: "Subsecciones", exact: true });
+  // Menú lateral del rediseño del pasajero (reemplaza la doble barra "Secciones/Subsecciones").
+  const navigation = page.getByRole("navigation", { name: "Navegación principal", exact: true });
   await expect(navigation.getByRole("link", { name: "Mapa", exact: true })).toBeVisible();
   await expect(page.getByRole("button", { name: /Notificaciones/ })).toBeVisible();
 });
@@ -63,6 +64,7 @@ test("tras salir, el login de Control vuelve en blanco y permite ingresar otra v
   await page.getByLabel("Contraseña", { exact: true }).fill("control123");
   await page.getByRole("button", { name: "Ingresar", exact: true }).click();
   await expect(page).toHaveURL("/control");
+  await page.getByRole("button", { name: "Menú de usuario" }).click();
   await page.getByRole("button", { name: "Volver al inicio", exact: true }).click();
 
   // Navegación del lado del cliente (sin recargar): ahí es donde la página conservaba su estado.

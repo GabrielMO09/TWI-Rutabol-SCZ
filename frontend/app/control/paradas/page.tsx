@@ -83,9 +83,9 @@ export default function StopsPage() {
                 <td><Chip tone={stop.active ? "good" : "warn"}>{stop.active ? "Activa" : "Inactiva"}</Chip></td>
                 <td>
                   <div className="flex gap-2">
-                    <button type="button" className="btn btn-outline" disabled={command.busy}
+                    <button type="button" className="psj-btn psj-btn-outline" disabled={command.busy}
                       onClick={() => edit(stop)} aria-label={`Editar parada ${stop.name}`}>Editar</button>
-                    <button type="button" className="btn btn-outline" disabled={command.busy}
+                    <button type="button" className="psj-btn psj-btn-outline" disabled={command.busy}
                       onClick={() => void remove(stop)} aria-label={`Eliminar parada ${stop.name}`}>Eliminar</button>
                   </div>
                 </td>
@@ -98,14 +98,14 @@ export default function StopsPage() {
       <Section title={editing ? `Editar parada: ${editing.name}` : "Nueva parada"}>
         <QueryState {...lines} />
         {!lines.loading && !lines.error && !lines.data?.length && (
-          <p className="my-3 text-sm text-muted">Registra una línea en Micro antes de agregar paradas.</p>
+          <p className="my-3 text-sm text-(--psj-muted-strong)">Registra una línea en Micro antes de agregar paradas.</p>
         )}
         <form key={editing?.id ?? "new"} ref={form} onSubmit={submit} className="mt-3 space-y-3">
           <fieldset disabled={command.busy || !lines.data?.length} className="grid gap-3 sm:grid-cols-2">
             <legend className="sr-only">Datos de la parada</legend>
             <div>
-              <label htmlFor="stop-line" className="label">Línea</label>
-              <select id="stop-line" name="line" className="input" defaultValue={editing?.line ?? ""} required>
+              <label htmlFor="stop-line" className="psj-label">Línea</label>
+              <select id="stop-line" name="line" className="psj-input" defaultValue={editing?.line ?? ""} required>
                 <option value="">Selecciona una línea</option>
                 {lines.data?.map((line) => (
                   <option key={line.id} value={line.id}>
@@ -115,29 +115,29 @@ export default function StopsPage() {
               </select>
             </div>
             <div>
-              <label htmlFor="stop-name" className="label">Nombre</label>
-              <input id="stop-name" name="name" className="input" defaultValue={editing?.name}
+              <label htmlFor="stop-name" className="psj-label">Nombre</label>
+              <input id="stop-name" name="name" className="psj-input" defaultValue={editing?.name}
                 maxLength={120} required />
             </div>
             <div className="sm:col-span-2">
-              <label htmlFor="stop-reference" className="label">Referencia (opcional)</label>
-              <input id="stop-reference" name="reference" className="input" defaultValue={editing?.reference}
+              <label htmlFor="stop-reference" className="psj-label">Referencia (opcional)</label>
+              <input id="stop-reference" name="reference" className="psj-input" defaultValue={editing?.reference}
                 maxLength={180} />
             </div>
             <div>
-              <label htmlFor="stop-lat" className="label">Latitud</label>
+              <label htmlFor="stop-lat" className="psj-label">Latitud</label>
               <input id="stop-lat" name="lat" type="number" min={-90} max={90} step="any"
-                className="input" defaultValue={editing?.lat} required />
+                className="psj-input" defaultValue={editing?.lat} required />
             </div>
             <div>
-              <label htmlFor="stop-lng" className="label">Longitud</label>
+              <label htmlFor="stop-lng" className="psj-label">Longitud</label>
               <input id="stop-lng" name="lng" type="number" min={-180} max={180} step="any"
-                className="input" defaultValue={editing?.lng} required />
+                className="psj-input" defaultValue={editing?.lng} required />
             </div>
             <div>
-              <label htmlFor="stop-order" className="label">Orden en la línea</label>
+              <label htmlFor="stop-order" className="psj-label">Orden en la línea</label>
               <input id="stop-order" name="order" type="number" min={1} max={2147483647} step={1}
-                className="input" defaultValue={editing?.order ?? 1} required />
+                className="psj-input" defaultValue={editing?.order ?? 1} required />
             </div>
             <label htmlFor="stop-active" className="flex items-center gap-2 text-sm">
               <input id="stop-active" name="active" type="checkbox" defaultChecked={editing?.active ?? true} />
@@ -146,11 +146,11 @@ export default function StopsPage() {
           </fieldset>
           <Notice {...command} />
           <div className="flex flex-wrap gap-2">
-            <button className="btn btn-primary" disabled={command.busy || !lines.data?.length}>
+            <button className="psj-btn psj-btn-primary" disabled={command.busy || !lines.data?.length}>
               {command.busy ? "Guardando…" : editing ? "Guardar parada" : "Crear parada"}
             </button>
             {editing && (
-              <button type="button" className="btn btn-outline" disabled={command.busy} onClick={clear}>
+              <button type="button" className="psj-btn psj-btn-outline" disabled={command.busy} onClick={clear}>
                 Cancelar edición
               </button>
             )}

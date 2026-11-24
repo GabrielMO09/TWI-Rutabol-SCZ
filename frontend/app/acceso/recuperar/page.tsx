@@ -41,37 +41,37 @@ export default function Recuperar() {
       {step === 1 && (
         <form onSubmit={request} className="flex flex-col gap-4">
           <div>
-            <label htmlFor="id" className="label">Código RUDE, correo institucional o CI</label>
-            <input id="id" className="input" value={id} onChange={(e) => setId(e.target.value)} required autoComplete="username" />
+            <label htmlFor="id" className="psj-label">Código RUDE, correo institucional o CI</label>
+            <input id="id" className="psj-input" value={id} onChange={(e) => setId(e.target.value)} required autoComplete="username" />
           </div>
           <ErrorNote text={error} />
-          <button className="btn btn-primary">Enviar código</button>
+          <button className="psj-btn psj-btn-primary">Enviar código</button>
         </form>
       )}
       {step === 2 && (
         <form onSubmit={confirm} className="flex flex-col gap-4">
-          <p className="text-sm text-muted">Si la cuenta existe, enviamos un código de verificación.</p>
+          <p className="text-sm text-(--psj-muted-strong)">Si la cuenta existe, enviamos un código de verificación.</p>
           {devCode && (
-            <p className="rounded-lg bg-soft p-3 text-xs">
+            <p className="rounded-lg bg-(--psj-green-soft) p-3 text-xs">
               Correo simulado. Tu código de prueba es <span className="font-mono font-semibold">{devCode}</span>.
             </p>
           )}
           <div>
-            <label htmlFor="cd" className="label">Código de verificación</label>
-            <input id="cd" className="input" value={code} onChange={(e) => setCode(e.target.value)} required inputMode="numeric" />
+            <label htmlFor="cd" className="psj-label">Código de verificación</label>
+            <input id="cd" className="psj-input" value={code} onChange={(e) => setCode(e.target.value)} required inputMode="numeric" />
           </div>
           <div>
-            <label htmlFor="pw" className="label">Contraseña nueva</label>
-            <input id="pw" type="password" className="input" value={password} onChange={(e) => setPassword(e.target.value)} required minLength={8} autoComplete="new-password" />
+            <label htmlFor="pw" className="psj-label">Contraseña nueva</label>
+            <input id="pw" type="password" className="psj-input" value={password} onChange={(e) => setPassword(e.target.value)} required minLength={8} autoComplete="new-password" />
           </div>
           <ErrorNote text={error} />
-          <button className="btn btn-primary">Cambiar contraseña</button>
+          <button className="psj-btn psj-btn-primary">Cambiar contraseña</button>
         </form>
       )}
       {step === 3 && (
         <div className="flex flex-col gap-4">
-          <p role="status" className="rounded-lg bg-soft p-3 text-sm text-brand-dark">Tu contraseña fue actualizada.</p>
-          <Link href="/acceso/pasajero" className="btn btn-primary">Ir a iniciar sesión</Link>
+          <p role="status" className="rounded-lg bg-(--psj-green-soft) p-3 text-sm text-(--psj-green-dark)">Tu contraseña fue actualizada.</p>
+          <Link href="/acceso/pasajero" className="psj-btn psj-btn-primary">Ir a iniciar sesión</Link>
         </div>
       )}
     </AuthFrame>

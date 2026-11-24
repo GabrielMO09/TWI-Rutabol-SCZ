@@ -2,12 +2,12 @@
 
 import Link from "next/link";
 import { useRef, useState } from "react";
-import { CheckCircle2, CreditCard, Info, Receipt, Wallet } from "lucide-react";
-import { ErrorNote } from "@/components/AuthFrame";
+import { Ban, BusFront, CheckCircle2, IdCard, Info, Lock, Receipt, Wallet } from "lucide-react";
+import { bs, dateTime, maskCard } from "@/components/pasajero/format";
+import { EmptyState, ErrorState, LineBadge, Notice, Skeleton, StatusPill } from "@/components/pasajero/ui";
 import { newKey, useFetch } from "@/lib/api";
-import { CATEGORY_LABEL, FARES } from "@/lib/data";
-import { nearbyBuses, useApp, type Ticket } from "@/lib/store";
-import { PLAZA, RADIUS_KM } from "@/lib/data";
+import { CATEGORY_LABEL, FARES, PLAZA, RADIUS_KM } from "@/lib/data";
+import { nearbyBuses, useApp, type Bus, type Ticket } from "@/lib/store";
 
 interface WalletInfo {
   cardNumber: string;
@@ -15,12 +15,37 @@ interface WalletInfo {
   status: "activa" | "bloqueada";
 }
 
+function BusOption({ bus, active, onPick }: { bus: Bus; active: boolean; onPick: () => void }) {
+  const full = bus.occupancy >= bus.max;
+  return (
+    <button
+      type="button"
+      disabled={full}
+      aria-pressed={active}
+      onClick={onPick}
+      className={`psj-card flex w-full items-center gap-3 p-3 text-left transition-colors disabled:cursor-not-allowed disabled:opacity-60 ${
+        active ? "border-(--psj-green) bg-(--psj-green-soft)" : ""
+      }`}
+    >
+      <LineBadge line={bus.line} />
+      <span className="min-w-0 flex-1">
+        <span className="block font-semibold">Línea {bus.line} · Interno {bus.internal}</span>
+        <span className="block text-xs text-(--psj-muted-strong)">
+          {bus.occupancy}/{bus.max} pasajeros{bus.direction ? ` · sentido ${bus.direction}` : ""}
+        </span>
+      </span>
+      {full && <StatusPill tone="danger">Lleno</StatusPill>}
+    </button>
+  );
+}
+
 export default function Pago() {
   const { profile, world, selectedBusId, selectBus, payTicket } = useApp();
-  const { data: wallet, reload } = useFetch<WalletInfo>("/wallet/me");
+  const { data: wallet, error: walletError, reload } = useFetch<WalletInfo>("/wallet/me", 4000);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState<Ticket | null>(null);
+  const [changing, setChanging] = useState(false);
   // Misma clave en cada reintento del mismo pago: el backend nunca cobra dos veces.
   const key = useRef(newKey());
 
@@ -28,8 +53,12 @@ export default function Pago() {
   const fare = FARES[category];
   const candidates = nearbyBuses(world.buses, PLAZA, RADIUS_KM).map((n) => n.bus);
   const bus = world.buses.find((b) => b.id === selectedBusId) ?? null;
+  const full = !!bus && bus.occupancy >= bus.max;
   const pendingStudent = profile?.category !== "general" && category === "general";
-  const low = wallet !== null && wallet.balance < fare;
+  const blocked = wallet?.status === "bloqueada";
+  const low = !!wallet && wallet.balance < fare;
+  const after = wallet ? wallet.balance - fare : null;
+  const canPay = !!bus && !full && !!wallet && !blocked && !low && !busy;
 
   async function pay() {
     if (!bus) return setError("Elige la unidad en la que vas a viajar.");
@@ -45,110 +74,166 @@ export default function Pago() {
 
   if (done) {
     return (
-      <div className="mx-auto flex max-w-md flex-col items-center gap-4 py-10 text-center">
-        <CheckCircle2 size={56} className="text-brand" />
+      <div className="mx-auto flex max-w-md flex-col items-center gap-4 py-4 text-center">
+        <span className="flex h-16 w-16 items-center justify-center rounded-full bg-(--psj-green-soft) text-(--psj-green)">
+          <CheckCircle2 size={36} aria-hidden="true" />
+        </span>
         <h1 className="text-2xl font-semibold">Pago aprobado</h1>
-        <div className="card w-full p-4 text-left text-sm">
-          <p className="mb-2 flex items-center gap-2 font-semibold">
-            <Receipt size={16} />
-            Comprobante {done.receiptNo}
+        <div className="psj-card psj-card-shadow w-full p-4 text-left text-sm">
+          <p className="mb-3 flex items-center gap-2 font-semibold">
+            <Receipt size={16} aria-hidden="true" />
+            Comprobante {done.receiptNo ?? done.id}
           </p>
-          <dl className="grid grid-cols-2 gap-1">
-            <dt className="text-muted">Unidad</dt>
-            <dd>Línea {done.line ?? done.busId.split("-")[0]} / Interno {done.internal ?? done.busId.split("-")[1]}</dd>
-            <dt className="text-muted">Categoría</dt>
-            <dd>{CATEGORY_LABEL[done.category]}</dd>
-            <dt className="text-muted">Importe</dt>
-            <dd className="font-semibold">Bs {done.fare.toFixed(2)}</dd>
-            <dt className="text-muted">Medio</dt>
-            <dd>{done.method}</dd>
-            <dt className="text-muted">Fecha</dt>
-            <dd>{new Date(done.at).toLocaleString("es-BO")}</dd>
+          <dl className="grid grid-cols-2 gap-y-2">
+            <dt className="text-(--psj-muted-strong)">Unidad</dt>
+            <dd className="text-right">Línea {done.line ?? done.busId.split("-")[0]} / Interno {done.internal ?? done.busId.split("-")[1]}</dd>
+            <dt className="text-(--psj-muted-strong)">Categoría</dt>
+            <dd className="text-right">{CATEGORY_LABEL[done.category]}</dd>
+            <dt className="text-(--psj-muted-strong)">Importe</dt>
+            <dd className="text-right font-semibold tabular-nums">{bs(done.fare)}</dd>
+            <dt className="text-(--psj-muted-strong)">Medio</dt>
+            <dd className="text-right">{done.method}</dd>
+            <dt className="text-(--psj-muted-strong)">Fecha</dt>
+            <dd className="text-right">{dateTime(done.at)}</dd>
           </dl>
-          {done.fareReason && <p className="mt-2 text-xs text-muted">{done.fareReason}</p>}
+          {done.fareReason && <p className="mt-3 text-xs text-(--psj-muted-strong)">{done.fareReason}</p>}
         </div>
-        <p className="text-muted">Muestra tu código QR al chofer para que valide tu identidad.</p>
-        <div className="flex gap-2">
-          <Link href="/pasajero/carnet" className="btn btn-primary">Ver mi carnet</Link>
-          <Link href="/pasajero/historial" className="btn btn-outline">Mis viajes</Link>
+        <p className="text-sm text-(--psj-muted-strong)">Muestra tu código QR al chofer para que valide tu identidad.</p>
+        <div className="flex w-full flex-col gap-2 sm:flex-row">
+          <Link href="/pasajero/carnet" className="psj-btn psj-btn-primary flex-1">
+            <IdCard size={18} aria-hidden="true" />
+            Ver carnet y QR
+          </Link>
+          <Link href="/pasajero/historial" className="psj-btn psj-btn-outline flex-1">Mis viajes</Link>
         </div>
       </div>
     );
   }
 
+  const showList = !bus || changing;
+
   return (
     <div className="mx-auto flex max-w-xl flex-col gap-4">
-      <h1 className="text-2xl font-semibold">Pagar pasaje</h1>
+      <h1 className="sr-only">Pagar pasaje</h1>
 
-      <section className="card p-4" aria-labelledby="unidad">
-        <h2 id="unidad" className="mb-2 font-semibold">1. Unidad</h2>
-        {candidates.length === 0 ? (
-          <p className="text-sm text-muted">No hay unidades disponibles cerca. Revisa el mapa.</p>
-        ) : (
-          <select
-            className="input"
-            aria-label="Unidad en la que viajas"
-            value={bus?.id ?? ""}
-            onChange={(e) => selectBus(e.target.value || null)}
-          >
-            <option value="">Elige una unidad</option>
-            {candidates.map((b) => (
-              <option key={b.id} value={b.id} disabled={b.occupancy >= b.max}>
-                Línea {b.line} · Interno {b.internal} ({b.occupancy}/{b.max}){b.occupancy >= b.max ? " - Lleno" : ""}
-              </option>
-            ))}
-          </select>
-        )}
-      </section>
-
-      <section className="card p-4" aria-labelledby="medio">
-        <h2 id="medio" className="mb-3 font-semibold">2. Credicard</h2>
-        <div className="flex items-center gap-3 rounded-xl bg-brand p-4 text-white">
-          <CreditCard size={28} />
-          <div className="flex-1">
-            <p className="font-mono text-sm">{wallet?.cardNumber ?? "Cargando..."}</p>
-            <p className="text-xs">{wallet?.status === "bloqueada" ? "Tarjeta bloqueada" : "Tarjeta activa"}</p>
-          </div>
-          <div className="text-right">
-            <p className="text-xs">Saldo</p>
-            <p className="text-xl font-bold tabular-nums">Bs {(wallet?.balance ?? 0).toFixed(2)}</p>
-          </div>
+      <section aria-labelledby="unidad" className="flex flex-col gap-3">
+        <div className="flex items-center justify-between">
+          <h2 id="unidad" className="font-semibold">Unidad</h2>
+          {bus && (
+            <button type="button" className="psj-btn psj-btn-ghost min-h-11 px-2" onClick={() => setChanging((c) => !c)}>
+              {changing ? "Listo" : "Cambiar"}
+            </button>
+          )}
         </div>
-        {low && (
-          <p role="alert" className="mt-3 flex items-center gap-2 text-sm text-danger">
-            <Wallet size={16} />
-            Saldo insuficiente para este pasaje.
-            <Link href="/pasajero/credicard" className="font-medium underline">Recargar</Link>
+        {bus && !changing && <BusOption bus={bus} active onPick={() => undefined} />}
+        {showList &&
+          (candidates.length === 0 ? (
+            <div className="psj-card">
+              <EmptyState icon={BusFront} title="No hay unidades cerca">
+                Revisa el <Link href="/pasajero" className="font-semibold underline">mapa</Link> para ver otras unidades.
+              </EmptyState>
+            </div>
+          ) : (
+            <ul className="flex flex-col gap-2">
+              {candidates.map((b) => (
+                <li key={b.id}>
+                  <BusOption
+                    bus={b}
+                    active={b.id === bus?.id}
+                    onPick={() => {
+                      selectBus(b.id);
+                      setChanging(false);
+                    }}
+                  />
+                </li>
+              ))}
+            </ul>
+          ))}
+        {full && (
+          <p role="alert" className="flex items-center gap-2 text-sm font-medium text-(--psj-danger)">
+            <Ban size={16} aria-hidden="true" />
+            Esta unidad está llena. Elige otra.
           </p>
         )}
       </section>
 
-      <section className="card p-4" aria-live="polite">
-        <div className="flex items-center justify-between">
+      <section aria-labelledby="resumen" className="psj-card flex flex-col gap-4 p-4" aria-live="polite">
+        <h2 id="resumen" className="font-semibold">Resumen</h2>
+        <div className="flex items-end justify-between gap-3">
           <div>
-            <p className="text-sm text-muted">Tarifa {CATEGORY_LABEL[category]}</p>
-            <p className="text-3xl font-bold tabular-nums">Bs {fare.toFixed(2)}</p>
+            <p className="text-sm text-(--psj-muted-strong)">Tarifa {CATEGORY_LABEL[category]}</p>
+            <p className="text-3xl font-bold tabular-nums">{bs(fare)}</p>
           </div>
-          <span className="chip bg-soft text-brand-dark">Calculada por el servidor</span>
+          <StatusPill tone={category === "general" ? "neutral" : "success"}>
+            {category === "general" ? "Sin beneficio" : "Beneficio estudiantil vigente"}
+          </StatusPill>
         </div>
+        <p className="text-xs text-(--psj-muted-strong)">El servidor calcula la tarifa definitiva al cobrar.</p>
+
         {pendingStudent && (
-          <p className="mt-3 flex items-start gap-2 rounded-lg bg-amber-50 p-3 text-sm text-warn">
-            <Info size={16} className="mt-0.5 shrink-0" />
+          <p className="flex items-start gap-2 rounded-lg bg-(--psj-warn-soft) p-3 text-sm text-[#92400e]">
+            <Info size={16} aria-hidden="true" className="mt-0.5 shrink-0" />
             <span>
               Tu acreditación no está vigente, por eso se cobra la tarifa general.{" "}
-              <Link href="/pasajero/acreditacion" className="font-medium underline">Ver mi acreditación</Link>
+              <Link href="/pasajero/acreditacion" className="font-semibold underline">Ver mi acreditación</Link>
             </span>
           </p>
         )}
+
+        <div className="rounded-lg bg-(--psj-bg) p-3 text-sm">
+          {wallet ? (
+            <dl className="grid grid-cols-2 gap-y-1">
+              <dt className="flex items-center gap-2 text-(--psj-muted-strong)">
+                <Wallet size={14} aria-hidden="true" />
+                Credicard
+              </dt>
+              <dd className="text-right font-mono text-xs">{maskCard(wallet.cardNumber)}</dd>
+              <dt className="text-(--psj-muted-strong)">Saldo disponible</dt>
+              <dd className="text-right font-semibold tabular-nums">{bs(wallet.balance)}</dd>
+              <dt className="text-(--psj-muted-strong)">Saldo después del pago</dt>
+              <dd className={`text-right font-semibold tabular-nums ${after! < 0 ? "text-(--psj-danger)" : ""}`}>{bs(after!)}</dd>
+            </dl>
+          ) : walletError ? (
+            <ErrorState message="No pudimos cargar tu saldo. Revisa tu conexión." onRetry={() => void reload()} />
+          ) : (
+            <div className="flex flex-col gap-2" aria-busy="true">
+              <Skeleton className="h-4 w-2/3" />
+              <Skeleton className="h-4 w-1/2" />
+            </div>
+          )}
+        </div>
+
+        {blocked && (
+          <p role="alert" className="flex items-center gap-2 text-sm font-medium text-(--psj-danger)">
+            <Lock size={16} aria-hidden="true" />
+            Tu tarjeta está bloqueada.{" "}
+            <Link href="/pasajero/credicard" className="underline">Desbloquear</Link>
+          </p>
+        )}
+        {low && !blocked && (
+          <p role="alert" className="flex items-center gap-2 text-sm font-medium text-(--psj-danger)">
+            <Wallet size={16} aria-hidden="true" />
+            Saldo insuficiente para este pasaje.{" "}
+            <Link href="/pasajero/credicard" className="underline">Recargar</Link>
+          </p>
+        )}
       </section>
 
-      <ErrorNote text={error} />
-      <button className="btn btn-primary btn-lg" onClick={pay} disabled={busy || !bus}>
-        {busy ? "Procesando..." : `Pagar Bs ${fare.toFixed(2)}`}
-      </button>
-      <p className="text-center text-xs text-muted">
-        Si la conexión se corta, vuelve a pulsar Pagar: un reintento no genera un segundo cobro.
-      </p>
+      {error && (
+        <div className="flex flex-col gap-1">
+          <ErrorState message={error} />
+          <p className="text-xs text-(--psj-muted-strong)">
+            Si la conexión se cortó, vuelve a pulsar Pagar: un reintento no genera un segundo cobro.
+          </p>
+        </div>
+      )}
+      {!bus && !error && <Notice tone="warn">Elige una unidad para continuar.</Notice>}
+
+      <div className="sticky bottom-[calc(var(--psj-nav-h)+env(safe-area-inset-bottom))] z-10 -mx-4 bg-(--psj-bg) px-4 py-2 md:static md:mx-0 md:p-0">
+        <button type="button" className="psj-btn psj-btn-primary h-14 w-full text-base " onClick={() => void pay()} disabled={!canPay}>
+          {busy ? "Procesando..." : `Pagar ${bs(fare)}`}
+        </button>
+      </div>
     </div>
   );
 }

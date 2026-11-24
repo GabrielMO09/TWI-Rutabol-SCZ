@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Bus, ChevronRight, GraduationCap, LayoutDashboard, Map } from "lucide-react";
+import { Bus, ChevronRight, GraduationCap, LayoutDashboard } from "lucide-react";
 import AuthFrame from "@/components/AuthFrame";
 
 const ROLES = [
@@ -10,44 +10,43 @@ const ROLES = [
     text: "Ubica micros, paga tu pasaje y muestra tu carnet digital.",
   },
   {
-    href: "/mapa",
-    icon: Map,
-    title: "Solo consultar rutas (sin cuenta)",
-    text: "Mira líneas, tarifas, micros cercanos y estado del servicio.",
-  },
-  {
     href: "/acceso/chofer",
     icon: Bus,
-    title: "Chofer",
+    title: "Conductor",
     text: "Controla el aforo, valida pasajeros y gestiona trasbordos.",
   },
   {
     href: "/acceso/control",
     icon: LayoutDashboard,
     title: "Centro de Control",
-    text: "Vista completa del sistema: qué funciona, qué falla y la gestión de los micros.",
+    text: "Supervisa el sistema y gestiona la flota y el servicio.",
   },
 ];
 
+function RoleCard({ href, icon: Icon, title, text }: (typeof ROLES)[number]) {
+  return (
+    <Link
+      href={href}
+      className="psj-card group flex min-h-[88px] items-center gap-4 p-4 transition-all duration-200 hover:border-(--psj-green) hover:bg-(--psj-green-soft) active:scale-[0.99] active:bg-(--psj-green-soft)"
+    >
+      <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-(--psj-green-soft) text-(--psj-green) transition-colors group-hover:bg-white">
+        <Icon size={24} aria-hidden="true" />
+      </span>
+      <span className="flex-1">
+        <span className="block font-semibold">{title}</span>
+        <span className="block text-sm text-(--psj-muted-strong)">{text}</span>
+      </span>
+      <ChevronRight size={20} aria-hidden="true" className="text-(--psj-muted) transition-transform group-hover:translate-x-0.5" />
+    </Link>
+  );
+}
+
 export default function Acceso() {
   return (
-    <AuthFrame title="¿Cómo vas a ingresar?" subtitle="Cada perfil tiene su propio inicio de sesión." back="/">
+    <AuthFrame title="¿Cómo vas a ingresar?" subtitle="Elige tu perfil para continuar." back="/">
       <div className="flex flex-col gap-3">
-        {ROLES.map(({ href, icon: Icon, title, text }) => (
-          <Link
-            key={href}
-            href={href}
-            className="card flex items-center gap-4 p-4 transition-colors hover:border-brand hover:bg-soft"
-          >
-            <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-soft text-brand">
-              <Icon size={24} />
-            </span>
-            <span className="flex-1">
-              <span className="block font-semibold">{title}</span>
-              <span className="block text-sm text-muted">{text}</span>
-            </span>
-            <ChevronRight className="text-muted" size={20} />
-          </Link>
+        {ROLES.map((role) => (
+          <RoleCard key={role.href} {...role} />
         ))}
       </div>
     </AuthFrame>

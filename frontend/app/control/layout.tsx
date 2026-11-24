@@ -1,35 +1,14 @@
-"use client";
-
 import type { ReactNode } from "react";
-import {
-  LayoutDashboard, BadgeCheck, MessageSquareWarning, TriangleAlert,
-  Bus, Banknote, Users, ScrollText, FileDown, School, MapPin,
-} from "lucide-react";
-import AppShell, { type NavItem } from "@/components/AppShell";
-import { useFetch } from "@/lib/api";
-import { useApp } from "@/lib/store";
-import type { Overview } from "@/components/control/types";
+import { Inter } from "next/font/google";
+import ControlShell from "@/components/control/ControlShell";
+import "../area.css";
+
+const inter = Inter({ variable: "--font-inter", subsets: ["latin"] });
 
 export default function ControlLayout({ children }: { children: ReactNode }) {
-  const { ready, profile } = useApp();
-  const { data } = useFetch<Overview>(
-    ready && profile?.role === "control" ? "/control/overview" : null,
-    5000,
+  return (
+    <div data-area="control" className={`${inter.variable} flex min-h-dvh flex-1 flex-col`}>
+      <ControlShell>{children}</ControlShell>
+    </div>
   );
-
-  const nav: NavItem[] = [
-    { href: "/control", label: "Resumen", icon: LayoutDashboard },
-    { href: "/control/acreditaciones", label: "Acreditaciones", icon: BadgeCheck, badge: data?.kpis.acreditacionesPendientes },
-    { href: "/control/reclamos", label: "Reclamos", icon: MessageSquareWarning },
-    { href: "/control/incidentes", label: "Incidentes", icon: TriangleAlert },
-    { href: "/control/flota", label: "Micro", icon: Bus },
-    { href: "/control/paradas", label: "Paradas", icon: MapPin },
-    { href: "/control/instituciones", label: "Instituciones", icon: School },
-    { href: "/control/tarifas", label: "Tarifas", icon: Banknote },
-    { href: "/control/usuarios", label: "Usuarios", icon: Users },
-    { href: "/control/auditoria", label: "Auditoría", icon: ScrollText },
-    { href: "/control/reportes", label: "Reportes", icon: FileDown },
-  ];
-
-  return <AppShell role="control" nav={nav}>{children}</AppShell>;
 }

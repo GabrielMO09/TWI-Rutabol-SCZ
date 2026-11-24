@@ -2,8 +2,9 @@
 
 import { useRef, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
-import { LogIn } from "lucide-react";
+import { LayoutDashboard } from "lucide-react";
 import AuthFrame, { ErrorNote } from "@/components/AuthFrame";
+import { PasswordInput, SubmitButton, TextField } from "@/components/auth/fields";
 import { useApp } from "@/lib/store";
 
 export default function LoginControl() {
@@ -43,22 +44,19 @@ export default function LoginControl() {
   }
 
   return (
-    <AuthFrame title="Centro de Control" subtitle="Ingresa para consultar el estado del sistema y gestionar el servicio.">
+    <AuthFrame
+      icon={LayoutDashboard}
+      title="Centro de Control"
+      subtitle="Ingresa para consultar el estado del sistema y gestionar el servicio."
+      message="Visibilidad completa del servicio, en tiempo real."
+    >
       <form onSubmit={submit} className="flex flex-col gap-4" aria-busy={busy}>
-        <div>
-          <label htmlFor="control-id" className="label">Identificador</label>
-          <input id="control-id" className="input" autoComplete="username" value={id}
-            onChange={(event) => setId(event.target.value)} required disabled={busy} />
-        </div>
-        <div>
-          <label htmlFor="control-password" className="label">Contraseña</label>
-          <input id="control-password" type="password" className="input" autoComplete="current-password"
-            value={password} onChange={(event) => setPassword(event.target.value)} required disabled={busy} />
-        </div>
+        <TextField id="control-id" label="Identificador" autoComplete="username" value={id}
+          onChange={(event) => setId(event.target.value)} required disabled={busy} />
+        <PasswordInput id="control-password" autoComplete="current-password"
+          value={password} onChange={(event) => setPassword(event.target.value)} required disabled={busy} />
         <ErrorNote text={error} />
-        <button className="btn btn-primary" disabled={busy}>
-          <LogIn size={18} aria-hidden="true" />{busy ? "Ingresando…" : "Ingresar"}
-        </button>
+        <SubmitButton busy={busy} busyText="Ingresando…" />
       </form>
     </AuthFrame>
   );

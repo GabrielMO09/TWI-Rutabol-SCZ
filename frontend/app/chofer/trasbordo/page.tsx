@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { ArrowRightLeft, CheckCircle2, Siren, Ticket } from "lucide-react";
-import { ErrorNote } from "@/components/AuthFrame";
+import { ErrorState } from "@/components/pasajero/ui";
 import { RADIUS_KM } from "@/lib/data";
 import { nearbyBuses, useApp } from "@/lib/store";
 
@@ -36,38 +36,38 @@ export default function Trasbordo() {
   }
 
   return (
-    <div className="mx-auto flex max-w-2xl flex-col gap-5">
+    <div className="mx-auto flex max-w-3xl flex-col gap-5">
       <h1 className="sr-only">Trasbordos</h1>
-      <ErrorNote text={error} />
+      {error && <ErrorState message={error} />}
       {ok && (
-        <p className="flex items-center gap-2 rounded-lg border border-green-200 bg-green-50 px-3 py-2 text-sm text-brand-dark" role="status">
+        <p className="flex items-center gap-2 rounded-lg border border-green-200 bg-green-50 px-3 py-2 text-sm text-(--psj-green-dark)" role="status">
           <CheckCircle2 size={16} />
           {ok}
         </p>
       )}
 
-      <section className="card p-4">
+      <section className="psj-card p-4">
         <h2 className="flex items-center gap-2 text-lg font-semibold">
-          <Siren size={20} className="text-danger" />
+          <Siren size={20} className="text-(--psj-danger)" />
           Trasbordo de emergencia
         </h2>
-        <p className="mb-4 mt-1 text-sm text-muted">
+        <p className="mb-4 mt-1 text-sm text-(--psj-muted-strong)">
           Avisa a las unidades cercanas y genera pases temporales para trasladar a los pasajeros sin cobros duplicados.
         </p>
 
         {!emergency ? (
-          <button className="btn btn-danger btn-lg w-full" onClick={() => startEmergency(bus.id)}>
+          <button className="psj-btn psj-btn-danger psj-btn-lg w-full" onClick={() => startEmergency(bus.id)}>
             <Siren size={22} />
             Activar emergencia
           </button>
         ) : (
           <div className="flex flex-col gap-3">
-            <p className="rounded-lg bg-red-50 p-3 text-sm font-medium text-danger">
+            <p className="rounded-lg bg-(--psj-danger-soft) p-3 text-sm font-medium text-(--psj-danger)">
               Alerta enviada a {rescuers.length} unidades a menos de {RADIUS_KM} km. Pasajeros a bordo: {bus.occupancy}.
             </p>
             <div>
-              <label htmlFor="rescue" className="label">Unidad de rescate</label>
-              <select id="rescue" className="input h-14 text-base" value={rescueId} onChange={(e) => setRescueId(e.target.value)}>
+              <label htmlFor="rescue" className="psj-label">Unidad de rescate</label>
+              <select id="rescue" className="psj-input" value={rescueId} onChange={(e) => setRescueId(e.target.value)}>
                 <option value="">Selecciona una unidad</option>
                 {rescueOptions.map(({ bus: b, km }) => (
                   <option key={b.id} value={b.id}>
@@ -77,14 +77,14 @@ export default function Trasbordo() {
               </select>
             </div>
             <button
-              className="btn btn-primary btn-lg"
+              className="psj-btn psj-btn-primary psj-btn-lg"
               disabled={!rescueId || bus.occupancy === 0}
               onClick={() => run(() => emergencyTransfer(bus.id, rescueId), "Pasajeros trasladados con pases temporales.")}
             >
               <Ticket size={22} />
               Generar pases y trasladar
             </button>
-            <button className="btn btn-outline" onClick={() => resolveEmergency(bus.id)}>
+            <button className="psj-btn psj-btn-outline" onClick={() => resolveEmergency(bus.id)}>
               Cerrar emergencia y volver al servicio
             </button>
           </div>
@@ -95,25 +95,25 @@ export default function Trasbordo() {
             <h3 className="mb-2 text-sm font-semibold">Pases temporales ({myPasses.length}), Bs 0.00, válidos 60 min</h3>
             <ul className="flex flex-wrap gap-2">
               {myPasses.map((p) => (
-                <li key={p.id} className="chip bg-soft font-mono text-brand-dark">{p.code}</li>
+                <li key={p.id} className="psj-pill psj-pill-success font-mono">{p.code}</li>
               ))}
             </ul>
           </div>
         )}
       </section>
 
-      <section className="card p-4">
+      <section className="psj-card p-4">
         <h2 className="flex items-center gap-2 text-lg font-semibold">
-          <ArrowRightLeft size={20} className="text-brand" />
+          <ArrowRightLeft size={20} className="text-(--psj-green)" />
           Trasbordo por descanso
         </h2>
-        <p className="mb-4 mt-1 text-sm text-muted">
+        <p className="mb-4 mt-1 text-sm text-(--psj-muted-strong)">
           Pasa tus pasajeros a una unidad saliente de la misma línea y registra a quién se acredita el pago.
         </p>
         <div className="flex flex-col gap-3">
           <div>
-            <label htmlFor="out" className="label">Unidad saliente (Línea {bus.line})</label>
-            <select id="out" className="input h-14 text-base" value={outId} onChange={(e) => setOutId(e.target.value)}>
+            <label htmlFor="out" className="psj-label">Unidad saliente (Línea {bus.line})</label>
+            <select id="out" className="psj-input" value={outId} onChange={(e) => setOutId(e.target.value)}>
               <option value="">Selecciona una unidad</option>
               {sameLine.map((b) => (
                 <option key={b.id} value={b.id}>
@@ -122,11 +122,11 @@ export default function Trasbordo() {
               ))}
             </select>
             {sameLine.length === 0 && (
-              <p className="mt-1 text-xs text-muted">Ninguna unidad de tu línea tiene cupo para todos tus pasajeros.</p>
+              <p className="mt-1 text-xs text-(--psj-muted-strong)">Ninguna unidad de tu línea tiene cupo para todos tus pasajeros.</p>
             )}
           </div>
           <fieldset>
-            <legend className="label">Pago abonado se acredita a</legend>
+            <legend className="psj-label">Pago abonado se acredita a</legend>
             <div className="grid grid-cols-2 gap-2">
               {(
                 [
@@ -139,9 +139,7 @@ export default function Trasbordo() {
                   key={v}
                   aria-pressed={credit === v}
                   onClick={() => setCredit(v)}
-                  className={`rounded-lg border px-3 py-3 text-sm font-medium ${
-                    credit === v ? "border-brand bg-soft text-brand-dark" : "border-line hover:bg-soft"
-                  }`}
+                  className="psj-choice"
                 >
                   {label}
                 </button>
@@ -149,7 +147,7 @@ export default function Trasbordo() {
             </div>
           </fieldset>
           <button
-            className="btn btn-primary btn-lg"
+            className="psj-btn psj-btn-primary psj-btn-lg"
             disabled={!outId || bus.status !== "activo"}
             onClick={() => run(() => restTransfer(bus.id, outId, credit), "Trasbordo registrado. Tu unidad quedó en descanso.")}
           >
@@ -158,12 +156,12 @@ export default function Trasbordo() {
         </div>
 
         {myLedger.length > 0 && (
-          <ul className="mt-4 divide-y divide-line text-sm">
+          <ul className="mt-4 divide-y divide-(--psj-line) text-sm">
             {myLedger.map((l) => (
               <li key={l.id} className="flex items-center justify-between py-2">
                 <span>
                   {l.passengers} pasajeros hacia {l.toBus.replace("-", " / ")}
-                  <span className="block text-xs text-muted">
+                  <span className="block text-xs text-(--psj-muted-strong)">
                     Acreditado a {l.creditedTo === "descanso" ? "unidad en descanso" : "unidad saliente"}
                   </span>
                 </span>

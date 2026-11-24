@@ -1,7 +1,9 @@
 "use client";
 
-import { useState } from "react";
-import { Bell } from "lucide-react";
+import { useMemo, useState } from "react";
+import { Bell, BellOff, BadgeCheck, CheckCheck, MessageSquareWarning, Receipt, Wallet, type LucideIcon } from "lucide-react";
+import { dayLabel, time } from "@/components/pasajero/format";
+import { EmptyState, Sheet } from "@/components/pasajero/ui";
 import { act, useFetch } from "@/lib/api";
 import { useApp } from "@/lib/store";
 
@@ -13,55 +15,93 @@ interface Notification {
   read: boolean;
 }
 
+/** El backend no envía el tipo: se infiere del título solo para elegir el icono. */
+function iconFor(title: string): LucideIcon {
+  const t = title.toLowerCase();
+  if (/acredit|carnet|correo/.test(t)) return BadgeCheck;
+  if (/reclamo/.test(t)) return MessageSquareWarning;
+  if (/recarga|saldo|tarjeta/.test(t)) return Wallet;
+  if (/pasaje|pago|cobro|viaje/.test(t)) return Receipt;
+  return Bell;
+}
+
 export default function NotificationBell() {
   const { unread, refresh } = useApp();
-  const { data: notes, reload } = useFetch<Notification[]>("/notifications/me", 6000);
+  const { data: notes, error, reload } = useFetch<Notification[]>("/notifications/me", 6000);
   const [open, setOpen] = useState(false);
 
+  const groups = useMemo(() => {
+    const map = new Map<string, Notification[]>();
+    for (const n of [...(notes ?? [])].sort((a, b) => b.at - a.at)) {
+      const label = dayLabel(n.at);
+      map.set(label, [...(map.get(label) ?? []), n]);
+    }
+    return [...map];
+  }, [notes]);
+
   return (
-    <div className="relative">
+    <>
       <button
-        className="btn btn-outline relative h-9"
+        type="button"
+        className="psj-icon-btn relative"
         aria-label={`Notificaciones${unread ? `, ${unread} sin leer` : ""}`}
-        aria-expanded={open}
-        onClick={() => setOpen((o) => !o)}
+        aria-haspopup="dialog"
+        onClick={() => setOpen(true)}
       >
-        <Bell size={16} />
+        <Bell size={20} aria-hidden="true" />
         {!!unread && (
-          <span className="absolute -right-1.5 -top-1.5 rounded-full bg-brand px-1.5 text-xs font-semibold text-white">{unread}</span>
+          <span aria-hidden="true" className="absolute -right-0.5 -top-0.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-(--psj-danger) px-1 text-xs font-bold text-white">
+            {unread}
+          </span>
         )}
       </button>
-      {open && (
-        <section
-          aria-label="Notificaciones"
-          className="card absolute right-0 top-11 z-[1100] w-[min(22rem,calc(100vw-2rem))] p-3 shadow-lg"
-        >
-          <div className="mb-2 flex items-center justify-between">
-            <h2 className="font-semibold">Notificaciones</h2>
+
+      <Sheet open={open} onClose={() => setOpen(false)} title="Notificaciones">
+        <div className="flex flex-col gap-3">
+          {error && !notes && <p role="alert" className="text-sm text-(--psj-danger)">No pudimos cargar tus notificaciones.</p>}
+          {!!unread && (
             <button
-              className="tap text-sm font-medium text-brand underline"
-              onClick={() => void act("/notifications/read-all").then(() => { reload(); void refresh(); })}
+              type="button"
+              className="psj-btn psj-btn-outline self-end"
+              onClick={() => void act("/notifications/read-all").then(() => { void reload(); void refresh(); })}
             >
+              <CheckCheck size={16} aria-hidden="true" />
               Marcar todo como leído
             </button>
-          </div>
-          {!notes || notes.length === 0 ? (
-            <p className="text-sm text-muted">No tienes notificaciones.</p>
-          ) : (
-            <ul className="max-h-80 divide-y divide-line overflow-y-auto text-sm">
-              {notes.map((n) => (
-                <li key={n.id} className="py-2">
-                  <p className={n.read ? "" : "font-semibold"}>
-                    {n.title} {!n.read && <span className="chip ml-1 bg-brand text-white">Nueva</span>}
-                  </p>
-                  <p className="text-muted">{n.body}</p>
-                  <p className="text-xs text-muted">{new Date(n.at).toLocaleString("es-BO")}</p>
-                </li>
-              ))}
-            </ul>
           )}
-        </section>
-      )}
-    </div>
+          {groups.length === 0 ? (
+            <EmptyState icon={BellOff} title="No tienes notificaciones">
+              Te avisaremos aquí sobre recargas, acreditaciones y reclamos.
+            </EmptyState>
+          ) : (
+            groups.map(([label, items]) => (
+              <section key={label} aria-label={label}>
+                <h3 className="mb-1 text-xs font-semibold uppercase capitalize tracking-wide text-(--psj-muted-strong)">{label}</h3>
+                <ul className="divide-y divide-(--psj-line)">
+                  {items.map((n) => {
+                    const Icon = iconFor(n.title);
+                    return (
+                      <li key={n.id} className="flex gap-3 py-3">
+                        <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${n.read ? "bg-(--psj-bg) text-(--psj-muted-strong)" : "bg-(--psj-green-soft) text-(--psj-green)"}`}>
+                          <Icon size={18} aria-hidden="true" />
+                        </span>
+                        <div className="min-w-0 flex-1 text-sm">
+                          <p className={`flex items-center gap-2 ${n.read ? "" : "font-semibold"}`}>
+                            {n.title}
+                            {!n.read && <span className="psj-pill psj-pill-success">Nueva</span>}
+                          </p>
+                          <p className="text-(--psj-muted-strong)">{n.body}</p>
+                          <p className="text-xs text-(--psj-muted-strong)">{time(n.at)}</p>
+                        </div>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </section>
+            ))
+          )}
+        </div>
+      </Sheet>
+    </>
   );
 }

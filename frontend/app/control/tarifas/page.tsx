@@ -51,19 +51,19 @@ function FareForm({ current, reload }: { current: Fares; reload: () => Promise<v
         <legend className="sr-only">Nuevas tarifas</legend>
         {categories.map((category) => (
           <div key={category}>
-            <label htmlFor={`fare-${category}`} className="label">{text(category)} (Bs)</label>
-            <input id={`fare-${category}`} type="number" min="0.01" max="50" step="0.01" className="input" value={values[category]}
+            <label htmlFor={`fare-${category}`} className="psj-label">{text(category)} (Bs)</label>
+            <input id={`fare-${category}`} type="number" min="0.01" max="50" step="0.01" className="psj-input" value={values[category]}
               onChange={(event) => setValues({ ...values, [category]: event.target.value })} required />
           </div>
         ))}
         <div className="sm:col-span-3">
-          <label htmlFor="fare-reason" className="label">Motivo del cambio</label>
-          <textarea id="fare-reason" className="input min-h-24 py-2" value={reason}
+          <label htmlFor="fare-reason" className="psj-label">Motivo del cambio</label>
+          <textarea id="fare-reason" className="psj-input min-h-24 py-2" value={reason}
             onChange={(event) => setReason(event.target.value)} required minLength={5} />
         </div>
       </fieldset>
       <Notice {...command} />
-      <button className="btn btn-primary" disabled={command.busy}>{command.busy ? "Aplicando…" : "Confirmar nuevas tarifas"}</button>
+      <button className="psj-btn psj-btn-primary" disabled={command.busy}>{command.busy ? "Aplicando…" : "Confirmar nuevas tarifas"}</button>
     </form>
   );
 }
@@ -78,7 +78,7 @@ export default function FaresPage() {
       {query.data && (
         <>
           <Section title="Tarifas vigentes">
-            <p className="mb-4 text-sm text-muted">Vigentes desde {date(query.data.current.validFrom)}</p>
+            <p className="mb-4 text-sm text-(--psj-muted-strong)">Vigentes desde {date(query.data.current.validFrom)}</p>
             <div className="grid gap-3 sm:grid-cols-3">
               {categories.map((category) => <StatCard key={category} label={text(category)} value={money(query.data!.current[category])} />)}
             </div>

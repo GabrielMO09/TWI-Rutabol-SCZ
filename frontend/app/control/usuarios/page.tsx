@@ -38,26 +38,26 @@ function WalletAdjustment({ user, reload, close }: {
 
   return (
     <Section title={`Ajustar saldo: ${user.name}`}>
-      <p className="mb-4 text-sm text-muted">{user.userId} · Saldo informado: {money(user.balance ?? 0)}</p>
+      <p className="mb-4 text-sm text-(--psj-muted-strong)">{user.userId} · Saldo informado: {money(user.balance ?? 0)}</p>
       <form onSubmit={submit} className="space-y-3">
         <fieldset disabled={command.busy} className="grid gap-3 sm:grid-cols-2">
           <legend className="sr-only">Ajuste de saldo</legend>
           <div>
-            <label htmlFor="wallet-amount" className="label">Importe en Bs</label>
-            <input id="wallet-amount" type="number" step="0.01" className="input" value={amount}
+            <label htmlFor="wallet-amount" className="psj-label">Importe en Bs</label>
+            <input id="wallet-amount" type="number" step="0.01" className="psj-input" value={amount}
               onChange={(event) => setAmount(event.target.value)} required aria-describedby="wallet-help" />
-            <p id="wallet-help" className="mt-1 text-xs text-muted">Positivo para acreditar; negativo para descontar.</p>
+            <p id="wallet-help" className="mt-1 text-xs text-(--psj-muted-strong)">Positivo para acreditar; negativo para descontar.</p>
           </div>
           <div>
-            <label htmlFor="wallet-reason" className="label">Motivo obligatorio</label>
-            <textarea id="wallet-reason" className="input min-h-24 py-2" minLength={5} required value={reason}
+            <label htmlFor="wallet-reason" className="psj-label">Motivo obligatorio</label>
+            <textarea id="wallet-reason" className="psj-input min-h-24 py-2" minLength={5} required value={reason}
               onChange={(event) => setReason(event.target.value)} />
           </div>
         </fieldset>
         <Notice {...command} />
         <div className="flex flex-wrap gap-2">
-          <button className="btn btn-primary" disabled={command.busy}>{command.busy ? "Guardando…" : "Confirmar ajuste de saldo"}</button>
-          <button type="button" className="btn btn-outline" disabled={command.busy} onClick={close}>Cerrar ajuste</button>
+          <button className="psj-btn psj-btn-primary" disabled={command.busy}>{command.busy ? "Guardando…" : "Confirmar ajuste de saldo"}</button>
+          <button type="button" className="psj-btn psj-btn-outline" disabled={command.busy} onClick={close}>Cerrar ajuste</button>
         </div>
       </form>
     </Section>
@@ -87,12 +87,12 @@ export default function UsersPage() {
     <Page title="Usuarios" subtitle="Consulta cuentas, gestiona su estado y registra ajustes de saldo.">
       <div className="grid gap-3 sm:grid-cols-2">
         <div>
-          <label htmlFor="user-search" className="label">Buscar por nombre, identificador o código</label>
-          <input id="user-search" type="search" className="input" value={search} onChange={(event) => setSearch(event.target.value)} />
+          <label htmlFor="user-search" className="psj-label">Buscar por nombre, identificador o código</label>
+          <input id="user-search" type="search" className="psj-input" value={search} onChange={(event) => setSearch(event.target.value)} />
         </div>
         <div>
-          <label htmlFor="user-role" className="label">Rol</label>
-          <select id="user-role" className="input" value={role} onChange={(event) => setRole(event.target.value)}>
+          <label htmlFor="user-role" className="psj-label">Rol</label>
+          <select id="user-role" className="psj-input" value={role} onChange={(event) => setRole(event.target.value)}>
             <option value="">Todos los roles</option>
             <option value="pasajero">Pasajero</option><option value="chofer">Conductor</option><option value="control">Centro de Control</option>
           </select>
@@ -104,19 +104,19 @@ export default function UsersPage() {
         <Table caption="Usuarios del sistema" headers={["Usuario", "Rol", "Categoría", "Código", "Estado", "Acreditación", "Saldo", "Registro", "Acciones"]}>
           {users.map((user) => (
             <tr key={user.userId}>
-              <td><p className="font-medium">{user.name}</p><p className="break-all text-xs text-muted">{user.userId}</p></td>
+              <td><p className="font-medium">{user.name}</p><p className="break-all text-xs text-(--psj-muted-strong)">{user.userId}</p></td>
               <td>{text(user.role)}</td><td>{user.category ? text(user.category) : "No corresponde"}</td><td>{user.codeMasked || "Sin código"}</td>
               <td><Status value={user.status} /></td>
               <td>{user.accreditationStatus ? <Status value={user.accreditationStatus} /> : "Sin acreditación"}</td>
               <td className="whitespace-nowrap">{user.balance !== undefined ? money(user.balance) : "No corresponde"}</td>
               <td className="whitespace-nowrap">{date(user.createdAt)}</td>
               <td><div className="flex flex-wrap gap-2">
-                <button type="button" className={`btn ${user.status === "activo" ? "btn-danger" : "btn-outline"}`} disabled={command.busy}
+                <button type="button" className={`psj-btn ${user.status === "activo" ? "psj-btn-danger" : "psj-btn-outline"}`} disabled={command.busy}
                   onClick={() => void toggle(user)} aria-label={`${user.status === "activo" ? "Suspender" : "Reactivar"} a ${user.name}`}>
                   {user.status === "activo" ? "Suspender" : "Reactivar"}
                 </button>
                 {user.role === "pasajero" && user.balance !== undefined && (
-                  <button type="button" className="btn btn-outline" disabled={command.busy} onClick={() => setSelectedId(user.userId)}
+                  <button type="button" className="psj-btn psj-btn-outline" disabled={command.busy} onClick={() => setSelectedId(user.userId)}
                     aria-label={`Ajustar saldo de ${user.name}`}>Ajustar saldo</button>
                 )}
               </div></td>

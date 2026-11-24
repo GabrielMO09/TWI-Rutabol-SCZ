@@ -51,23 +51,23 @@ function InstitutionForm({ item, reload, cancel }: {
       <fieldset disabled={command.busy} className="grid gap-3 sm:grid-cols-2">
         <legend className="sr-only">Datos de la institución</legend>
         <div>
-          <label htmlFor="institution-name" className="label">Nombre</label>
-          <input id="institution-name" className="input" value={name} onChange={(event) => setName(event.target.value)} required minLength={2} maxLength={180} />
+          <label htmlFor="institution-name" className="psj-label">Nombre</label>
+          <input id="institution-name" className="psj-input" value={name} onChange={(event) => setName(event.target.value)} required minLength={2} maxLength={180} />
         </div>
         <div>
-          <label htmlFor="institution-type" className="label">Tipo</label>
-          <select id="institution-type" className="input" value={type} onChange={(event) => setType(event.target.value === "universidad" ? "universidad" : "colegio")}>
+          <label htmlFor="institution-type" className="psj-label">Tipo</label>
+          <select id="institution-type" className="psj-input" value={type} onChange={(event) => setType(event.target.value === "universidad" ? "universidad" : "colegio")}>
             <option value="colegio">Colegio</option>
             <option value="universidad">Universidad</option>
           </select>
         </div>
         <div>
-          <label htmlFor="institution-address" className="label">Dirección</label>
-          <input id="institution-address" className="input" value={address} onChange={(event) => setAddress(event.target.value)} maxLength={1000} />
+          <label htmlFor="institution-address" className="psj-label">Dirección</label>
+          <input id="institution-address" className="psj-input" value={address} onChange={(event) => setAddress(event.target.value)} maxLength={1000} />
         </div>
         <div>
-          <label htmlFor="institution-domain" className="label">Dominio de correo</label>
-          <input id="institution-domain" className="input" value={domain} onChange={(event) => setDomain(event.target.value)}
+          <label htmlFor="institution-domain" className="psj-label">Dominio de correo</label>
+          <input id="institution-domain" className="psj-input" value={domain} onChange={(event) => setDomain(event.target.value)}
             required={type === "universidad" && enabled} maxLength={254} placeholder="institucion.edu.bo" />
         </div>
         <label className="flex items-center gap-2 text-sm">
@@ -77,8 +77,8 @@ function InstitutionForm({ item, reload, cancel }: {
       </fieldset>
       <Notice {...command} />
       <div className="flex flex-wrap gap-2">
-        <button className="btn btn-primary" disabled={command.busy}>{command.busy ? "Guardando…" : "Guardar institución"}</button>
-        {item && <button type="button" className="btn btn-outline" disabled={command.busy} onClick={cancel}>Cerrar edición</button>}
+        <button className="psj-btn psj-btn-primary" disabled={command.busy}>{command.busy ? "Guardando…" : "Guardar institución"}</button>
+        {item && <button type="button" className="psj-btn psj-btn-outline" disabled={command.busy} onClick={cancel}>Cerrar edición</button>}
       </div>
     </form>
   );
@@ -107,7 +107,7 @@ export default function InstitutionsPage() {
                   <td>{entry.emailDomain ?? "—"}</td>
                   <td>{entry.enabled ? "Habilitada" : "Deshabilitada"}</td>
                   <td>
-                    <button type="button" className="btn btn-outline" onClick={() => setSelected(entry.id)}
+                    <button type="button" className="psj-btn psj-btn-outline" onClick={() => setSelected(entry.id)}
                       aria-label={`Editar ${entry.name}`} aria-pressed={entry.id === selected}>
                       Editar
                     </button>

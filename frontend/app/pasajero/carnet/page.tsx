@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import QRCode from "qrcode";
 import { BadgeCheck, CircleAlert, RefreshCw, ShieldCheck, UserRound } from "lucide-react";
+import { ErrorState, Skeleton, StatusPill } from "@/components/pasajero/ui";
 import { api } from "@/lib/api";
 import { CATEGORY_LABEL } from "@/lib/data";
 import { useApp } from "@/lib/store";
@@ -27,7 +28,7 @@ export default function Carnet() {
       const c = await api<Credential>("/credentials/me", "POST");
       setCred(c);
       setError(null);
-      setQr(await QRCode.toDataURL(c.token, { margin: 1, width: 220, color: { dark: "#0f3d24", light: "#ffffff" } }));
+      setQr(await QRCode.toDataURL(c.token, { margin: 1, width: 220, color: { dark: "#103E2C", light: "#ffffff" } }));
     } catch (e) {
       setError((e as Error).message);
     }
@@ -51,60 +52,62 @@ export default function Carnet() {
   const left = cred ? Math.max(0, Math.ceil((cred.expiresAt - now) / 1000)) : 0;
   const student = profile.category !== "general";
   const vigente = profile.fareCategory === profile.category;
+  const acc = profile.accreditation;
 
   return (
     <div className="mx-auto flex max-w-sm flex-col gap-3">
-      <h1 className="text-lg font-semibold">Carnet digital</h1>
-      <article className="card overflow-hidden">
-        <div className="flex items-center justify-between bg-brand px-4 py-3 text-white">
+      <h1 className="sr-only">Carnet digital</h1>
+      <article className="psj-card psj-card-shadow overflow-hidden">
+        <div className="flex items-center justify-between bg-(--psj-green-dark) px-4 py-3 text-white">
           <span className="text-sm font-semibold tracking-wide">RUTABOL-SCZ</span>
-          <span className="chip bg-white/20 text-white">{CATEGORY_LABEL[profile.category ?? "general"]}</span>
+          <span className="rounded-full bg-white/15 px-3 py-1 text-xs font-semibold">{CATEGORY_LABEL[profile.category ?? "general"]}</span>
         </div>
-        <div className="flex flex-col items-center gap-4 p-6">
-          <div className="flex h-36 w-36 items-center justify-center overflow-hidden rounded-2xl border border-line bg-soft text-muted">
+        <div className="flex flex-col items-center gap-3 p-5">
+          <div className="flex h-32 w-32 items-center justify-center overflow-hidden rounded-2xl border border-(--psj-line) bg-(--psj-green-soft) text-(--psj-green)">
             {profile.photo ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img src={profile.photo} alt={`Fotografía de ${profile.name}`} className="h-full w-full object-cover" />
             ) : (
-              <UserRound size={64} />
+              <UserRound size={56} aria-hidden="true" />
             )}
           </div>
           <div className="text-center">
             <p className="text-xl font-semibold">{profile.name}</p>
-            <p className="mt-1 flex items-center justify-center gap-1 text-sm">
-              {vigente ? <BadgeCheck size={16} className="text-brand" /> : <CircleAlert size={16} className="text-warn" />}
-              {student
-                ? vigente
-                  ? `Acreditación vigente · tarifa ${CATEGORY_LABEL[profile.fareCategory ?? "general"].toLowerCase()}`
-                  : "Acreditación no vigente · tarifa general"
-                : "Tarifa general"}
+            <div className="mt-2 flex justify-center">
+              <StatusPill tone={student && !vigente ? "warn" : "success"}>
+                {vigente ? <BadgeCheck size={12} aria-hidden="true" /> : <CircleAlert size={12} aria-hidden="true" />}
+                {student ? (vigente ? "Acreditación vigente" : "Acreditación no vigente") : "Cuenta general"}
+              </StatusPill>
+            </div>
+            <p className="mt-2 text-sm text-(--psj-muted-strong)">
+              Tarifa {CATEGORY_LABEL[profile.fareCategory ?? "general"].toLowerCase()}
+              {acc?.validUntil && vigente ? ` · hasta ${new Date(acc.validUntil).toLocaleDateString("es-BO")}` : ""}
             </p>
+            {acc?.institution && <p className="text-xs text-(--psj-muted-strong)">{acc.institution}</p>}
           </div>
         </div>
-        <div className="border-t border-line bg-soft p-4">
+        <div className="border-t border-(--psj-line) bg-(--psj-bg) p-4">
           <div className="flex flex-col items-center gap-2">
             {qr ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img src={qr} alt="Código QR temporal para validar tu identidad" width={220} height={220} className="rounded-lg bg-white" />
-            ) : (
-              <div className="flex h-[220px] w-[220px] items-center justify-center text-sm text-muted">
-                {error ? "Sin código" : "Generando código..."}
-              </div>
+            ) : error ? null : (
+              <Skeleton className="h-[220px] w-[220px] rounded-lg" />
             )}
-            <p className="flex items-center gap-2 text-sm font-medium text-brand-dark">
-              <ShieldCheck size={16} />
+            <p className="flex items-center gap-2 text-sm font-medium text-(--psj-green-dark)">
+              <ShieldCheck size={16} aria-hidden="true" />
               Código temporal · vence en {left} s
             </p>
           </div>
-          <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-line">
-            <div className="h-full bg-brand transition-all" style={{ width: `${(left / 60) * 100}%` }} />
+          <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-(--psj-line)" aria-hidden="true">
+            <div className="h-full bg-(--psj-green) transition-all" style={{ width: `${(left / 60) * 100}%` }} />
           </div>
-          {error && <p role="alert" className="mt-2 text-sm text-danger">{error}</p>}
-          <button className="btn btn-outline mt-3 h-9 w-full" onClick={() => void load()}>
-            <RefreshCw size={16} />
+          {error && <div className="mt-3"><ErrorState message={error} onRetry={() => void load()} /></div>}
+          <button type="button" className="psj-btn psj-btn-outline mt-3 w-full" onClick={() => void load()}>
+            <RefreshCw size={16} aria-hidden="true" />
             Generar un código nuevo
           </button>
-          <p className="mt-2 text-xs text-muted">
+          <p className="mt-3 text-xs text-(--psj-muted-strong)">
             El código lo firma el servidor, no incluye tu RUDE ni tu correo y solo puede usarse una vez. Una captura de
             pantalla no sirve para abordar.
           </p>

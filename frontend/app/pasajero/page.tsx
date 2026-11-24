@@ -1,7 +1,7 @@
 "use client";
 
-import MapExplorer from "@/components/MapExplorer";
+import PasajeroMap from "@/components/pasajero/PasajeroMap";
 
 export default function MapaPasajero() {
-  return <MapExplorer mode="pasajero" />;
+  return <PasajeroMap />;
 }

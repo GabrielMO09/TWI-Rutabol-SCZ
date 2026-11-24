@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { Banknote, QrCode, ScanLine, Ticket } from "lucide-react";
-import { ErrorNote } from "@/components/AuthFrame";
+import { ErrorState } from "@/components/pasajero/ui";
 import { act, api } from "@/lib/api";
 import { CATEGORY_LABEL, FARES, type Category } from "@/lib/data";
 import { useApp, type Bus } from "@/lib/store";
@@ -72,30 +72,30 @@ export function QrVerifier() {
   const canScan = typeof window !== "undefined" && "BarcodeDetector" in window;
 
   return (
-    <section className="card flex flex-col gap-3 p-4" aria-labelledby="qrv">
+    <section className="psj-card flex flex-col gap-3 p-4" aria-labelledby="qrv">
       <h2 id="qrv" className="flex items-center gap-2 font-semibold">
         <QrCode size={18} />
         Verificar carnet QR
       </h2>
       {scanning && <video ref={video} className="aspect-video w-full rounded-lg bg-black" muted playsInline />}
       <div>
-        <label htmlFor="qrt" className="label">Código del pasajero</label>
-        <input id="qrt" className="input font-mono" value={token} onChange={(e) => setToken(e.target.value)} placeholder="Pega o escanea el código" />
+        <label htmlFor="qrt" className="psj-label">Código del pasajero</label>
+        <input id="qrt" className="psj-input font-mono" value={token} onChange={(e) => setToken(e.target.value)} placeholder="Pega o escanea el código" />
       </div>
       <div className="flex gap-2">
-        <button className="btn btn-primary flex-1" disabled={!token.trim()} onClick={() => void verify(token)}>
+        <button className="psj-btn psj-btn-primary flex-1" disabled={!token.trim()} onClick={() => void verify(token)}>
           Verificar
         </button>
         {canScan && (
-          <button className="btn btn-outline" onClick={() => setScanning((s) => !s)}>
+          <button className="psj-btn psj-btn-outline" onClick={() => setScanning((s) => !s)}>
             <ScanLine size={16} />
             {scanning ? "Detener" : "Escanear"}
           </button>
         )}
       </div>
-      <ErrorNote text={msg} />
+      {msg && <ErrorState message={msg} />}
       {res && (
-        <div role="status" className={`flex items-center gap-3 rounded-lg border p-3 ${res.valid ? "border-brand bg-soft" : "border-danger bg-red-50"}`}>
+        <div role="status" className={`flex items-center gap-3 rounded-lg border p-3 ${res.valid ? "border-(--psj-green) bg-(--psj-green-soft)" : "border-(--psj-danger) bg-(--psj-danger-soft)"}`}>
           {res.photo && (
             // eslint-disable-next-line @next/next/no-img-element
             <img src={res.photo} alt={`Fotografía de ${res.name}`} className="h-16 w-16 rounded-lg object-cover" />
@@ -132,12 +132,12 @@ export function CashPanel({ bus }: { bus: Bus }) {
   }
 
   return (
-    <section className="card flex flex-col gap-3 p-4" aria-labelledby="cash">
+    <section className="psj-card flex flex-col gap-3 p-4" aria-labelledby="cash">
       <h2 id="cash" className="flex items-center gap-2 font-semibold">
         <Banknote size={18} />
         Cobro en efectivo
       </h2>
-      <p className="text-sm text-muted">El importe no se puede modificar: lo calcula el sistema.</p>
+      <p className="text-sm text-(--psj-muted-strong)">El importe no se puede modificar: lo calcula el sistema.</p>
       <div className="grid grid-cols-3 gap-2">
         {(Object.keys(CATEGORY_LABEL) as Category[]).map((c) => (
           <button
@@ -145,23 +145,23 @@ export function CashPanel({ bus }: { bus: Bus }) {
             type="button"
             aria-pressed={category === c}
             onClick={() => setCategory(c)}
-            className={`rounded-lg border px-2 py-3 text-sm font-medium ${category === c ? "border-brand bg-soft text-brand-dark" : "border-line"}`}
+            className="psj-choice"
           >
             {CATEGORY_LABEL[c]}
-            <span className="block text-xs font-normal text-muted">Bs {FARES[c].toFixed(2)}</span>
+            <span className="block text-xs font-normal text-(--psj-muted-strong)">Bs {FARES[c].toFixed(2)}</span>
           </button>
         ))}
       </div>
       {category !== "general" && (
         <div>
-          <label htmlFor="ct" className="label">Código QR del pasajero acreditado</label>
-          <input id="ct" className="input font-mono" value={token} onChange={(e) => setToken(e.target.value)} autoComplete="off" />
-          <p className="mt-1 text-xs text-muted">La tarifa preferencial exige la credencial vigente (no la uses antes en «Validar credencial»: el código es de un solo uso).</p>
+          <label htmlFor="ct" className="psj-label">Código QR del pasajero acreditado</label>
+          <input id="ct" className="psj-input font-mono" value={token} onChange={(e) => setToken(e.target.value)} autoComplete="off" />
+          <p className="mt-1 text-xs text-(--psj-muted-strong)">La tarifa preferencial exige la credencial vigente (no la uses antes en «Validar credencial»: el código es de un solo uso).</p>
         </div>
       )}
-      <ErrorNote text={msg} />
-      {ok && <p role="status" className="text-sm text-brand">{ok}</p>}
-      <button className="btn btn-primary btn-lg" onClick={charge} disabled={bus.occupancy >= bus.max}>
+      {msg && <ErrorState message={msg} />}
+      {ok && <p role="status" className="text-sm text-(--psj-green)">{ok}</p>}
+      <button className="psj-btn psj-btn-primary psj-btn-lg" onClick={charge} disabled={bus.occupancy >= bus.max}>
         Registrar cobro y subida
       </button>
     </section>
@@ -174,19 +174,19 @@ export function PassRedeem() {
   const [msg, setMsg] = useState<string | null>(null);
   const [ok, setOk] = useState(false);
   return (
-    <section className="card flex flex-col gap-3 p-4" aria-labelledby="pase">
+    <section className="psj-card flex flex-col gap-3 p-4" aria-labelledby="pase">
       <h2 id="pase" className="flex items-center gap-2 font-semibold">
         <Ticket size={18} />
         Pase temporal de trasbordo
       </h2>
       <div>
-        <label htmlFor="pc" className="label">Código del pase (TMP-...)</label>
-        <input id="pc" className="input font-mono uppercase" value={code} onChange={(e) => setCode(e.target.value)} />
+        <label htmlFor="pc" className="psj-label">Código del pase (TMP-...)</label>
+        <input id="pc" className="psj-input font-mono uppercase" value={code} onChange={(e) => setCode(e.target.value)} />
       </div>
-      <ErrorNote text={msg} />
-      {ok && <p role="status" className="text-sm text-brand">Pase aceptado: el pasajero no paga de nuevo.</p>}
+      {msg && <ErrorState message={msg} />}
+      {ok && <p role="status" className="text-sm text-(--psj-green)">Pase aceptado: el pasajero no paga de nuevo.</p>}
       <button
-        className="btn btn-outline border-2 border-brand-dark"
+        className="psj-btn psj-btn-outline"
         disabled={!code.trim()}
         onClick={async () => {
           const err = await act("/passes/redeem", "POST", { code: code.trim().toUpperCase() });

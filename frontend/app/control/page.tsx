@@ -38,11 +38,11 @@ export default function ControlOverview() {
                   const critical = !check.ok && check.severity === "critica";
                   const Icon = check.ok ? CheckCircle2 : critical ? OctagonAlert : AlertTriangle;
                   return (
-                    <li key={check.id} className="flex items-start gap-3 rounded-lg border border-line p-3">
-                      <Icon size={22} aria-hidden="true" className={`shrink-0 ${check.ok ? "text-brand" : critical ? "text-danger" : "text-warn"}`} />
+                    <li key={check.id} className="flex items-start gap-3 rounded-lg border border-(--psj-line) p-3">
+                      <Icon size={22} aria-hidden="true" className={`shrink-0 ${check.ok ? "text-(--psj-green)" : critical ? "text-(--psj-danger)" : "text-[#92400e]"}`} />
                       <div className="min-w-0 flex-1">
                         <h3 className="font-semibold">{check.title}</h3>
-                        <p className="mt-1 break-words text-sm text-muted">{check.detail}</p>
+                        <p className="mt-1 break-words text-sm text-(--psj-muted-strong)">{check.detail}</p>
                         <div className="mt-2">
                           <Chip tone={check.ok ? "good" : critical ? "danger" : "warn"}>
                             {check.ok ? "Funciona" : critical ? "Falla" : "Atención"}
@@ -113,13 +113,13 @@ export default function ControlOverview() {
               {!data.alerts.length ? <Empty>No hay alertas activas.</Empty> : (
                 <ul className="space-y-3">
                   {[...data.alerts].sort((a, b) => b.at - a.at).map((alert) => (
-                    <li key={alert.id} className="rounded-lg border border-line p-3">
+                    <li key={alert.id} className="rounded-lg border border-(--psj-line) p-3">
                       <div className="flex flex-wrap items-center gap-2">
                         <Chip tone={alert.kind === "aforo" ? "warn" : "danger"}>{text(alert.kind)}</Chip>
                         <span className="font-medium">Unidad {alert.busId}</span>
                       </div>
                       <p className="mt-2 break-words text-sm">{alert.message}</p>
-                      <p className="mt-1 text-xs text-muted">{date(alert.at)}</p>
+                      <p className="mt-1 text-xs text-(--psj-muted-strong)">{date(alert.at)}</p>
                     </li>
                   ))}
                 </ul>
@@ -129,18 +129,18 @@ export default function ControlOverview() {
               {!data.incidents.length ? <Empty>No hay incidentes registrados.</Empty> : (
                 <ul className="space-y-3">
                   {[...data.incidents].sort((a, b) => b.at - a.at).slice(0, 8).map((incident) => (
-                    <li key={incident.id} className="rounded-lg border border-line p-3">
+                    <li key={incident.id} className="rounded-lg border border-(--psj-line) p-3">
                       <p className="font-medium">{text(incident.type)} · {incident.line} / {incident.internal}</p>
                       <p className="my-2 break-words text-sm">{incident.description}</p>
                       <div className="flex flex-wrap gap-2">
                         <Status value={incident.severity} /><Status value={incident.status} />
                       </div>
-                      <p className="mt-2 text-xs text-muted">{date(incident.at)}</p>
+                      <p className="mt-2 text-xs text-(--psj-muted-strong)">{date(incident.at)}</p>
                     </li>
                   ))}
                 </ul>
               )}
-              <Link href="/control/incidentes" className="btn btn-outline mt-4">Gestionar incidentes</Link>
+              <Link href="/control/incidentes" className="psj-btn psj-btn-outline mt-4">Gestionar incidentes</Link>
             </Section>
           </div>
         </>

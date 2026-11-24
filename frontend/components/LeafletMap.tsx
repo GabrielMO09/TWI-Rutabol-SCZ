@@ -16,6 +16,10 @@ interface Props {
   routePath?: LatLng[];
   fitRoute?: boolean;
   stops?: Stop[];
+  /** Agrupa unidades cercanas en un solo marcador con contador (apagado por defecto). */
+  cluster?: boolean;
+  /** Píxeles del mapa tapados por un panel inferior: al centrar una unidad se compensan. */
+  bottomInset?: number;
 }
 
 const BUS_SVG =
@@ -33,7 +37,7 @@ function pinIcon(b: Bus, selected: boolean) {
   });
 }
 
-export default function LeafletMap({ buses, user, radiusKm, selectedId, onSelect, routePath, fitRoute, stops }: Props) {
+export default function LeafletMap({ buses, user, radiusKm, selectedId, onSelect, routePath, fitRoute, stops, cluster = false, bottomInset = 0 }: Props) {
   const el = useRef<HTMLDivElement>(null);
   const map = useRef<L.Map | null>(null);
   const markers = useRef(new Map<string, L.Marker>());
@@ -41,10 +45,12 @@ export default function LeafletMap({ buses, user, radiusKm, selectedId, onSelect
   const fittedPath = useRef<LatLng[] | undefined>(undefined);
   const busesRef = useRef(buses);
   const onSelectRef = useRef(onSelect);
+  const insetRef = useRef(bottomInset);
 
   useEffect(() => {
     busesRef.current = buses;
     onSelectRef.current = onSelect;
+    insetRef.current = bottomInset;
   });
 
   useEffect(() => {
@@ -55,7 +61,11 @@ export default function LeafletMap({ buses, user, radiusKm, selectedId, onSelect
     }).addTo(m);
     map.current = m;
     const marks = markers.current;
+    // El contenedor cambia de tamaño (panel lateral, hoja inferior): el mapa se reajusta sin reiniciarse.
+    const resize = new ResizeObserver(() => m.invalidateSize());
+    resize.observe(el.current!);
     return () => {
+      resize.disconnect();
       m.remove();
       map.current = null;
       marks.clear();
@@ -87,28 +97,63 @@ export default function LeafletMap({ buses, user, radiusKm, selectedId, onSelect
   useEffect(() => {
     const m = map.current;
     if (!m) return;
-    const seen = new Set<string>();
-    for (const b of buses) {
-      seen.add(b.id);
-      const sel = b.id === selectedId;
-      const existing = markers.current.get(b.id);
-      if (existing) {
-        existing.setLatLng(b.pos);
-        existing.setIcon(pinIcon(b, sel));
-        existing.setZIndexOffset(sel ? 1000 : 0);
-      } else {
-        const mk = L.marker(b.pos, { icon: pinIcon(b, sel), title: `Línea ${b.line}, interno ${b.internal}` }).addTo(m);
-        mk.on("click", () => onSelectRef.current(b.id));
-        markers.current.set(b.id, mk);
+    const draw = () => {
+      // Con agrupación, las unidades que se solaparían en pantalla se funden en un contador; la seleccionada nunca se agrupa.
+      const cells = new Map<string, Bus[]>();
+      for (const b of buses) {
+        const p = m.latLngToContainerPoint(b.pos);
+        const key = !cluster || b.id === selectedId ? b.id : `${Math.floor(p.x / 120)}:${Math.floor(p.y / 44)}`;
+        cells.set(key, [...(cells.get(key) ?? []), b]);
       }
-    }
-    for (const [id, mk] of markers.current) {
-      if (!seen.has(id)) {
-        mk.remove();
-        markers.current.delete(id);
+      const seen = new Set<string>();
+      for (const group of cells.values()) {
+        if (group.length === 1) {
+          const b = group[0];
+          const sel = b.id === selectedId;
+          seen.add(b.id);
+          const existing = markers.current.get(b.id);
+          if (existing) {
+            existing.setLatLng(b.pos);
+            existing.setIcon(pinIcon(b, sel));
+            existing.setZIndexOffset(sel ? 1000 : 0);
+          } else {
+            const mk = L.marker(b.pos, { icon: pinIcon(b, sel), title: `Línea ${b.line}, interno ${b.internal}` }).addTo(m);
+            mk.on("click", () => onSelectRef.current(b.id));
+            markers.current.set(b.id, mk);
+          }
+        } else {
+          const key = `cluster:${group.map((b) => b.id).sort().join("|")}`;
+          seen.add(key);
+          if (markers.current.has(key)) continue;
+          const lat = group.reduce((sum, b) => sum + b.pos[0], 0) / group.length;
+          const lng = group.reduce((sum, b) => sum + b.pos[1], 0) / group.length;
+          const mk = L.marker([lat, lng], {
+            icon: L.divIcon({
+              className: "",
+              iconSize: [40, 40],
+              iconAnchor: [20, 20],
+              html: `<div class="psj-cluster">${group.length}</div>`,
+            }),
+            title: `${group.length} unidades cercanas: acerca el mapa`,
+          }).addTo(m);
+          mk.on("click", () => m.fitBounds(L.latLngBounds(group.map((b) => b.pos)), { padding: [80, 80], maxZoom: 17 }));
+          markers.current.set(key, mk);
+        }
       }
-    }
-  }, [buses, selectedId]);
+      for (const [id, mk] of markers.current) {
+        if (!seen.has(id)) {
+          mk.remove();
+          markers.current.delete(id);
+        }
+      }
+    };
+    draw();
+    if (!cluster) return;
+    m.on("zoomend", draw);
+    return () => {
+      m.off("zoomend", draw);
+    };
+  }, [buses, selectedId, cluster]);
 
   useEffect(() => {
     const m = map.current;
@@ -159,7 +204,11 @@ export default function LeafletMap({ buses, user, radiusKm, selectedId, onSelect
 
   useEffect(() => {
     const b = busesRef.current.find((x) => x.id === selectedId);
-    if (b) map.current?.panTo(b.pos);
+    const m = map.current;
+    if (!b || !m) return;
+    // Si una hoja inferior tapa parte del mapa, se centra en la zona que sigue visible.
+    const inset = insetRef.current;
+    m.panTo(inset ? m.unproject(m.project(b.pos).add([0, inset / 2])) : b.pos);
   }, [selectedId]);
 
   return <div ref={el} className="h-full w-full" />;

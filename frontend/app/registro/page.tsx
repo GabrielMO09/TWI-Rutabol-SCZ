@@ -103,7 +103,7 @@ export default function Registro() {
     >
       <form onSubmit={submit} className="flex flex-col gap-4">
         <fieldset>
-          <legend className="label">Categoría</legend>
+          <legend className="psj-label">Categoría</legend>
           <div className="grid grid-cols-3 gap-2">
             {(Object.keys(CATEGORY_LABEL) as Category[]).map((c) => (
               <button
@@ -122,63 +122,63 @@ export default function Registro() {
                 }`}
               >
                 {CATEGORY_LABEL[c]}
-                <span className="block text-xs font-normal text-muted">Bs {FARES[c].toFixed(2)}</span>
+                <span className="block text-xs font-normal text-(--psj-muted-strong)">Bs {FARES[c].toFixed(2)}</span>
               </button>
             ))}
           </div>
         </fieldset>
 
         <div>
-          <label htmlFor="name" className="label">Nombre completo</label>
-          <input id="name" className="input" value={name} onChange={(e) => setName(e.target.value)} required autoComplete="name" />
+          <label htmlFor="name" className="psj-label">Nombre completo</label>
+          <input id="name" className="psj-input" value={name} onChange={(e) => setName(e.target.value)} required autoComplete="name" />
         </div>
         <div>
-          <label htmlFor="ci" className="label">Número de CI</label>
-          <input id="ci" className="input" value={ci} onChange={(e) => setCi(e.target.value)} required maxLength={15} placeholder="Ej. 7654321 o 7654321-1A" />
+          <label htmlFor="ci" className="psj-label">Número de CI</label>
+          <input id="ci" className="psj-input" value={ci} onChange={(e) => setCi(e.target.value)} required maxLength={15} placeholder="Ej. 7654321 o 7654321-1A" />
         </div>
         <div>
-          <label htmlFor="email" className="label">{category === "universitario" ? "Correo institucional" : "Correo electrónico"}</label>
-          <input id="email" className="input" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required autoComplete="email" maxLength={254} />
+          <label htmlFor="email" className="psj-label">{category === "universitario" ? "Correo institucional" : "Correo electrónico"}</label>
+          <input id="email" className="psj-input" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required autoComplete="email" maxLength={254} />
         </div>
         <div>
-          <label htmlFor="phone" className="label">Teléfono</label>
-          <input id="phone" className="input" type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} required autoComplete="tel" maxLength={30} placeholder="Ej. +591 71234567" />
+          <label htmlFor="phone" className="psj-label">Teléfono</label>
+          <input id="phone" className="psj-input" type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} required autoComplete="tel" maxLength={30} placeholder="Ej. +591 71234567" />
         </div>
         {student && (
           <>
             <div>
-              <label htmlFor="inst" className="label">{category === "escolar" ? "Unidad educativa" : "Universidad"}</label>
-              <select id="inst" className="input" value={institution} onChange={(e) => setInstitution(e.target.value)}
+              <label htmlFor="inst" className="psj-label">{category === "escolar" ? "Unidad educativa" : "Universidad"}</label>
+              <select id="inst" className="psj-input" value={institution} onChange={(e) => setInstitution(e.target.value)}
                 required disabled={catalog.loading || !!catalog.error || !options.length}>
                 <option value="">{catalog.loading ? "Cargando instituciones…" : "Selecciona una institución"}</option>
                 {options.map(({ id, name }) => <option key={id} value={id}>{name}</option>)}
               </select>
               <ErrorNote text={catalog.error} />
-              {catalog.error && <button type="button" className="btn btn-outline mt-2" onClick={() => void catalog.reload()}>Reintentar</button>}
+              {catalog.error && <button type="button" className="psj-btn psj-btn-outline mt-2" onClick={() => void catalog.reload()}>Reintentar</button>}
               {!catalog.loading && !catalog.error && !options.length &&
-                <p className="mt-2 text-sm text-muted">No hay instituciones habilitadas para esta categoría.</p>}
+                <p className="mt-2 text-sm text-(--psj-muted-strong)">No hay instituciones habilitadas para esta categoría.</p>}
             </div>
             <div>
-              <label htmlFor="code" className="label">{category === "escolar" ? "Código RUDE" : "Código institucional"}</label>
-              <input id="code" className="input" value={code} onChange={(e) => setCode(e.target.value)}
+              <label htmlFor="code" className="psj-label">{category === "escolar" ? "Código RUDE" : "Código institucional"}</label>
+              <input id="code" className="psj-input" value={code} onChange={(e) => setCode(e.target.value)}
                 required minLength={category === "escolar" ? 8 : 1} maxLength={category === "escolar" ? 20 : 70} />
             </div>
           </>
         )}
         <div>
-          <label htmlFor="pw" className="label">Contraseña</label>
-          <input id="pw" type="password" className="input" value={password} onChange={(e) => setPassword(e.target.value)} required autoComplete="new-password" minLength={8} />
+          <label htmlFor="pw" className="psj-label">Contraseña</label>
+          <input id="pw" type="password" className="psj-input" value={password} onChange={(e) => setPassword(e.target.value)} required autoComplete="new-password" minLength={8} />
         </div>
         <div>
-          <label htmlFor="confirmation" className="label">Repetir contraseña</label>
-          <input id="confirmation" type="password" className="input" value={passwordConfirmation}
+          <label htmlFor="confirmation" className="psj-label">Repetir contraseña</label>
+          <input id="confirmation" type="password" className="psj-input" value={passwordConfirmation}
             onChange={(e) => setPasswordConfirmation(e.target.value)} required autoComplete="new-password" minLength={8} />
         </div>
 
         <div>
-          <span className="label">Fotografía del rostro (obligatoria)</span>
+          <span className="psj-label">Fotografía del rostro (obligatoria)</span>
           <div className="flex items-center gap-4">
-            <div className="flex h-20 w-20 items-center justify-center overflow-hidden rounded-xl border border-line bg-soft text-muted">
+            <div className="flex h-20 w-20 items-center justify-center overflow-hidden rounded-xl border border-(--psj-line) bg-(--psj-green-soft) text-(--psj-muted-strong)">
               {photo ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img src={photo} alt="Vista previa de tu fotografía" className="h-full w-full object-cover" />
@@ -186,24 +186,24 @@ export default function Registro() {
                 <UserRound size={32} />
               )}
             </div>
-            <label htmlFor="photo" className="btn btn-outline cursor-pointer">
+            <label htmlFor="photo" className="psj-btn psj-btn-outline cursor-pointer">
               <Camera size={16} />
               {photo ? "Cambiar foto" : "Subir foto"}
             </label>
             <input id="photo" type="file" accept="image/*" capture="user" className="sr-only" onChange={onPhoto} />
           </div>
-          <p className="mt-2 text-xs text-muted">Se usa para generar tu carnet digital antifraude.</p>
+          <p className="mt-2 text-xs text-(--psj-muted-strong)">Se usa para generar tu carnet digital antifraude.</p>
         </div>
 
         <label className="flex items-start gap-3 text-sm">
           <input type="checkbox" className="mt-1 h-5 w-5 accent-[var(--g600)]" checked={acceptTerms} onChange={(e) => setAcceptTerms(e.target.checked)} required />
           <span>
-            Acepto los <Link href="/terminos" className="font-medium text-brand underline">términos de uso</Link> y la{" "}
-            <Link href="/privacidad" className="font-medium text-brand underline">política de privacidad</Link>.
+            Acepto los <Link href="/terminos" className="font-medium text-(--psj-green) underline">términos de uso</Link> y la{" "}
+            <Link href="/privacidad" className="font-medium text-(--psj-green) underline">política de privacidad</Link>.
           </span>
         </label>
         <ErrorNote text={error} />
-        <button className="btn btn-primary" disabled={busy || (student && (!!catalog.error || !options.length))}>
+        <button className="psj-btn psj-btn-primary" disabled={busy || (student && (!!catalog.error || !options.length))}>
           {busy ? "Creando cuenta..." : "Crear cuenta"}
         </button>
       </form>

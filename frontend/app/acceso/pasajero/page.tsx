@@ -2,14 +2,16 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
-import { LogIn } from "lucide-react";
+import { useRef, useState } from "react";
+import { GraduationCap } from "lucide-react";
 import AuthFrame, { ErrorNote } from "@/components/AuthFrame";
+import { PasswordInput, SubmitButton, TextField } from "@/components/auth/fields";
 import { useApp } from "@/lib/store";
 
 export default function LoginPasajero() {
   const { loginPassenger } = useApp();
   const router = useRouter();
+  const lock = useRef(false);
   const [id, setId] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -17,8 +19,12 @@ export default function LoginPasajero() {
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
+    if (lock.current) return;
+    lock.current = true;
     setBusy(true);
+    setError(null);
     const err = await loginPassenger(id, password);
+    lock.current = false;
     setBusy(false);
     if (err) setError(err);
     else {
@@ -29,23 +35,19 @@ export default function LoginPasajero() {
   }
 
   return (
-    <AuthFrame title="Ingreso de estudiante" subtitle="Usa tu código RUDE, correo @upds.edu.bo o CI.">
-      <form onSubmit={submit} className="flex flex-col gap-4">
-        <div>
-          <label htmlFor="id" className="label">Código RUDE, correo institucional o CI</label>
-          <input id="id" className="input" value={id} onChange={(e) => setId(e.target.value)} required autoComplete="username" />
-        </div>
-        <div>
-          <label htmlFor="pw" className="label">Contraseña</label>
-          <input id="pw" type="password" className="input" value={password} onChange={(e) => setPassword(e.target.value)} required autoComplete="current-password" />
-        </div>
+    <AuthFrame
+      icon={GraduationCap}
+      title="Ingreso de estudiante"
+      subtitle="Usa tu código RUDE, correo institucional o CI."
+      message="Tu pasaje, tu carnet y tus rutas en un solo lugar."
+    >
+      <form onSubmit={submit} className="flex flex-col gap-4" aria-busy={busy}>
+        <TextField label="Código RUDE, correo institucional o CI" value={id} onChange={(e) => setId(e.target.value)} required autoComplete="username" disabled={busy} />
+        <PasswordInput value={password} onChange={(e) => setPassword(e.target.value)} required autoComplete="current-password" disabled={busy} />
         <ErrorNote text={error} />
-        <button className="btn btn-primary" disabled={busy}>
-          <LogIn size={16} />
-          {busy ? "Verificando..." : "Ingresar"}
-        </button>
-        <Link href="/registro" className="btn btn-outline">Crear cuenta</Link>
-        <Link href="/acceso/recuperar" className="tap justify-center text-center text-sm font-medium text-brand underline">¿Olvidaste tu contraseña?</Link>
+        <SubmitButton busy={busy} />
+        <Link href="/registro" className="psj-btn psj-btn-outline w-full">Crear cuenta</Link>
+        <Link href="/acceso/recuperar" className="psj-btn psj-btn-ghost w-full text-(--psj-green)">¿Olvidaste tu contraseña?</Link>
       </form>
     </AuthFrame>
   );

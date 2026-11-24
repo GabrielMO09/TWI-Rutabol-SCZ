@@ -103,8 +103,8 @@ function LinesPanel() {
                 <td>{line.id}</td><td>{line.name}</td><td>{line.waypoints.length} puntos</td>
                 <td><Chip tone={line.active ? "good" : "warn"}>{line.active ? "Activa" : "Inactiva"}</Chip></td>
                 <td><div className="flex gap-2">
-                  <button type="button" className="btn btn-outline" disabled={command.busy} onClick={() => edit(line)} aria-label={`Editar línea ${line.id}`}>Editar</button>
-                  <button type="button" className="btn btn-outline" disabled={command.busy} onClick={() => void toggle(line)}
+                  <button type="button" className="psj-btn psj-btn-outline" disabled={command.busy} onClick={() => edit(line)} aria-label={`Editar línea ${line.id}`}>Editar</button>
+                  <button type="button" className="psj-btn psj-btn-outline" disabled={command.busy} onClick={() => void toggle(line)}
                     aria-label={`${line.active ? "Desactivar" : "Activar"} línea ${line.id}`}>{line.active ? "Desactivar" : "Activar"}</button>
                 </div></td>
               </tr>
@@ -117,34 +117,34 @@ function LinesPanel() {
           <fieldset disabled={command.busy} className="grid gap-3 sm:grid-cols-2">
             <legend className="sr-only">Datos de la línea</legend>
             <div>
-              <label htmlFor="line-id" className="label">Identificador</label>
-              <input id="line-id" className="input" value={id} disabled={!!editing} onChange={(event) => setId(event.target.value)} required />
+              <label htmlFor="line-id" className="psj-label">Identificador</label>
+              <input id="line-id" className="psj-input" value={id} disabled={!!editing} onChange={(event) => setId(event.target.value)} required />
             </div>
             <div>
-              <label htmlFor="line-name" className="label">Nombre</label>
-              <input id="line-name" className="input" value={name} onChange={(event) => setName(event.target.value)} required />
+              <label htmlFor="line-name" className="psj-label">Nombre</label>
+              <input id="line-name" className="psj-input" value={name} onChange={(event) => setName(event.target.value)} required />
             </div>
             {editing ? (
               <div className="sm:col-span-2">
-                <p className="mb-3 text-sm text-muted">Recorrido registrado: {editing.waypoints.length} puntos.</p>
+                <p className="mb-3 text-sm text-(--psj-muted-strong)">Recorrido registrado: {editing.waypoints.length} puntos.</p>
                 <label htmlFor="line-active" className="flex items-center gap-2 text-sm">
                   <input id="line-active" type="checkbox" checked={active} onChange={(event) => setActive(event.target.checked)} />Línea activa
                 </label>
               </div>
             ) : (
               <div className="sm:col-span-2">
-                <label htmlFor="line-points" className="label">Puntos del recorrido en JSON</label>
-                <textarea id="line-points" className="input min-h-28 py-2 font-mono" value={waypoints}
+                <label htmlFor="line-points" className="psj-label">Puntos del recorrido en JSON</label>
+                <textarea id="line-points" className="psj-input min-h-28 py-2 font-mono" value={waypoints}
                   onChange={(event) => setWaypoints(event.target.value)} required aria-describedby="line-points-help"
                   placeholder="[[-17.78,-63.18],[-17.79,-63.19]]" />
-                <p id="line-points-help" className="mt-1 text-xs text-muted">Formato: [[latitud,longitud],…]. Se requieren al menos dos puntos.</p>
+                <p id="line-points-help" className="mt-1 text-xs text-(--psj-muted-strong)">Formato: [[latitud,longitud],…]. Se requieren al menos dos puntos.</p>
               </div>
             )}
           </fieldset>
           <Notice {...command} />
           <div className="flex flex-wrap gap-2">
-            <button className="btn btn-primary" disabled={command.busy}>{command.busy ? "Guardando…" : editing ? "Guardar línea" : "Crear línea"}</button>
-            {editing && <button type="button" className="btn btn-outline" disabled={command.busy} onClick={clear}>Cancelar edición</button>}
+            <button className="psj-btn psj-btn-primary" disabled={command.busy}>{command.busy ? "Guardando…" : editing ? "Guardar línea" : "Crear línea"}</button>
+            {editing && <button type="button" className="psj-btn psj-btn-outline" disabled={command.busy} onClick={clear}>Cancelar edición</button>}
           </div>
         </form>
       </Section>
@@ -230,8 +230,8 @@ function BusesPanel() {
                 <td><Status value={bus.status} /></td>
                 <td><Chip tone={bus.active ? "good" : "warn"}>{bus.active ? "Activo" : "Inactivo"}</Chip></td>
                 <td><div className="flex gap-2">
-                  <button type="button" className="btn btn-outline" disabled={command.busy} onClick={() => edit(bus)} aria-label={`Editar bus ${bus.id}`}>Editar</button>
-                  <button type="button" className="btn btn-outline" disabled={command.busy} onClick={() => void toggle(bus)}
+                  <button type="button" className="psj-btn psj-btn-outline" disabled={command.busy} onClick={() => edit(bus)} aria-label={`Editar bus ${bus.id}`}>Editar</button>
+                  <button type="button" className="psj-btn psj-btn-outline" disabled={command.busy} onClick={() => void toggle(bus)}
                     aria-label={`${bus.active ? "Desactivar" : "Activar"} bus ${bus.id}`}>{bus.active ? "Desactivar" : "Activar"}</button>
                 </div></td>
               </tr>
@@ -241,35 +241,35 @@ function BusesPanel() {
       </Section>
       <Section title={editing ? `Editar bus ${editing.id}` : "Nuevo bus"}>
         <QueryState {...lines} />
-        {!lines.loading && !lines.data?.length && <p className="my-3 text-sm text-muted">Registra una línea antes de crear un bus.</p>}
+        {!lines.loading && !lines.data?.length && <p className="my-3 text-sm text-(--psj-muted-strong)">Registra una línea antes de crear un bus.</p>}
         <form ref={formRef} onSubmit={submit} className="mt-3 space-y-3">
           <fieldset disabled={command.busy} className="grid gap-3 sm:grid-cols-2">
             <legend className="sr-only">Datos del bus</legend>
             <div>
-              <label htmlFor="bus-line" className="label">Línea</label>
-              <select id="bus-line" className="input" value={line} onChange={(event) => setLine(event.target.value)} disabled={!!editing} required>
+              <label htmlFor="bus-line" className="psj-label">Línea</label>
+              <select id="bus-line" className="psj-input" value={line} onChange={(event) => setLine(event.target.value)} disabled={!!editing} required>
                 <option value="">Selecciona una línea</option>
                 {editing && !lines.data?.some((item) => item.id === line) && <option value={line}>{line}</option>}
                 {lines.data?.map((item) => <option key={item.id} value={item.id}>{item.id} · {item.name}</option>)}
               </select>
             </div>
             <div>
-              <label htmlFor="bus-internal" className="label">Interno</label>
-              <input id="bus-internal" className="input" value={internal} onChange={(event) => setInternal(event.target.value)} disabled={!!editing} required />
+              <label htmlFor="bus-internal" className="psj-label">Interno</label>
+              <input id="bus-internal" className="psj-input" value={internal} onChange={(event) => setInternal(event.target.value)} disabled={!!editing} required />
             </div>
             <div>
-              <label htmlFor="bus-plate" className="label">Placa</label>
-              <input id="bus-plate" className="input" value={plate} onChange={(event) => setPlate(event.target.value)} required />
+              <label htmlFor="bus-plate" className="psj-label">Placa</label>
+              <input id="bus-plate" className="psj-input" value={plate} onChange={(event) => setPlate(event.target.value)} required />
             </div>
             <div>
-              <label htmlFor="bus-max" className="label">Aforo máximo</label>
-              <input id="bus-max" type="number" min="18" max="25" step="1" className="input" value={max} onChange={(event) => setMax(event.target.value)} required />
+              <label htmlFor="bus-max" className="psj-label">Aforo máximo</label>
+              <input id="bus-max" type="number" min="18" max="25" step="1" className="psj-input" value={max} onChange={(event) => setMax(event.target.value)} required />
             </div>
             {editing && (
               <>
                 <div>
-                  <label htmlFor="bus-status" className="label">Estado operativo</label>
-                  <select id="bus-status" className="input" value={status} onChange={(event) => setStatus(event.target.value as Bus["status"])}>
+                  <label htmlFor="bus-status" className="psj-label">Estado operativo</label>
+                  <select id="bus-status" className="psj-input" value={status} onChange={(event) => setStatus(event.target.value as Bus["status"])}>
                     <option value="activo">Activo</option><option value="descanso">Descanso</option><option value="emergencia">Emergencia</option>
                   </select>
                 </div>
@@ -281,10 +281,10 @@ function BusesPanel() {
           </fieldset>
           <Notice {...command} />
           <div className="flex flex-wrap gap-2">
-            <button className="btn btn-primary" disabled={command.busy || (!editing && !lines.data?.length)}>
+            <button className="psj-btn psj-btn-primary" disabled={command.busy || (!editing && !lines.data?.length)}>
               {command.busy ? "Guardando…" : editing ? "Guardar bus" : "Crear bus"}
             </button>
-            {editing && <button type="button" className="btn btn-outline" disabled={command.busy} onClick={clear}>Cancelar edición</button>}
+            {editing && <button type="button" className="psj-btn psj-btn-outline" disabled={command.busy} onClick={clear}>Cancelar edición</button>}
           </div>
         </form>
       </Section>
@@ -387,8 +387,8 @@ function DriversPanel() {
                 <td>{driver.name}</td><td>{driver.line}</td><td>{driver.internal}</td>
                 <td><Chip tone={driverActive(driver) ? "good" : "warn"}>{driverActive(driver) ? "Activo" : "Inactivo"}</Chip></td>
                 <td><div className="flex gap-2">
-                  <button type="button" className="btn btn-outline" disabled={command.busy || !driverId(driver)} onClick={() => edit(driver)} aria-label={`Editar conductor ${driver.name}`}>Editar</button>
-                  <button type="button" className="btn btn-outline" disabled={command.busy || !driverId(driver)} onClick={() => void toggle(driver)}
+                  <button type="button" className="psj-btn psj-btn-outline" disabled={command.busy || !driverId(driver)} onClick={() => edit(driver)} aria-label={`Editar conductor ${driver.name}`}>Editar</button>
+                  <button type="button" className="psj-btn psj-btn-outline" disabled={command.busy || !driverId(driver)} onClick={() => void toggle(driver)}
                     aria-label={`${driverActive(driver) ? "Desactivar" : "Activar"} conductor ${driver.name}`}>{driverActive(driver) ? "Desactivar" : "Activar"}</button>
                 </div></td>
               </tr>
@@ -398,17 +398,17 @@ function DriversPanel() {
       </Section>
       <Section title={editing ? `Editar conductor: ${editing.name}` : "Nuevo conductor"}>
         <QueryState {...buses} />
-        {!buses.loading && !buses.data?.length && <p className="my-3 text-sm text-muted">Registra un bus antes de asignar un conductor.</p>}
+        {!buses.loading && !buses.data?.length && <p className="my-3 text-sm text-(--psj-muted-strong)">Registra un bus antes de asignar un conductor.</p>}
         <form ref={formRef} onSubmit={submit} className="mt-3 space-y-3">
           <fieldset disabled={command.busy} className="grid gap-3 sm:grid-cols-2">
             <legend className="sr-only">Datos del conductor</legend>
             <div>
-              <label htmlFor="driver-name" className="label">Nombre completo</label>
-              <input id="driver-name" className="input" value={name} onChange={(event) => setName(event.target.value)} required />
+              <label htmlFor="driver-name" className="psj-label">Nombre completo</label>
+              <input id="driver-name" className="psj-input" value={name} onChange={(event) => setName(event.target.value)} required />
             </div>
             <div>
-              <label htmlFor="driver-bus" className="label">Línea e interno asignados</label>
-              <select id="driver-bus" className="input" value={busId} disabled={!!editing} onChange={(event) => setBusId(event.target.value)} required>
+              <label htmlFor="driver-bus" className="psj-label">Línea e interno asignados</label>
+              <select id="driver-bus" className="psj-input" value={busId} disabled={!!editing} onChange={(event) => setBusId(event.target.value)} required>
                 <option value="">Selecciona un bus</option>
                 {editing && !buses.data?.some((bus) => bus.id === busId) && <option value={busId}>{editing.line} / {editing.internal}</option>}
                 {buses.data?.map((bus) => {
@@ -418,10 +418,10 @@ function DriversPanel() {
               </select>
             </div>
             <div>
-              <label htmlFor="driver-pin" className="label">{editing ? "Nuevo PIN (opcional)" : "PIN de 4 dígitos"}</label>
+              <label htmlFor="driver-pin" className="psj-label">{editing ? "Nuevo PIN (opcional)" : "PIN de 4 dígitos"}</label>
               <input id="driver-pin" type="password" inputMode="numeric" autoComplete="new-password" pattern="[0-9]{4}" maxLength={4}
-                className="input" value={pin} onChange={(event) => setPin(event.target.value)} required={!editing} aria-describedby="driver-pin-help" />
-              <p id="driver-pin-help" className="mt-1 text-xs text-muted">{editing ? "Déjalo vacío para conservar el PIN actual." : "Solo números; conserva los ceros iniciales."}</p>
+                className="psj-input" value={pin} onChange={(event) => setPin(event.target.value)} required={!editing} aria-describedby="driver-pin-help" />
+              <p id="driver-pin-help" className="mt-1 text-xs text-(--psj-muted-strong)">{editing ? "Déjalo vacío para conservar el PIN actual." : "Solo números; conserva los ceros iniciales."}</p>
             </div>
             {editing && <label htmlFor="driver-active" className="flex items-center gap-2 text-sm">
               <input id="driver-active" type="checkbox" checked={active} onChange={(event) => setActive(event.target.checked)} />Conductor activo
@@ -429,10 +429,10 @@ function DriversPanel() {
           </fieldset>
           <Notice {...command} />
           <div className="flex flex-wrap gap-2">
-            <button className="btn btn-primary" disabled={command.busy || (!editing && !buses.data?.length)}>
+            <button className="psj-btn psj-btn-primary" disabled={command.busy || (!editing && !buses.data?.length)}>
               {command.busy ? "Guardando…" : editing ? "Guardar conductor" : "Crear conductor"}
             </button>
-            {editing && <button type="button" className="btn btn-outline" disabled={command.busy} onClick={clear}>Cancelar edición</button>}
+            {editing && <button type="button" className="psj-btn psj-btn-outline" disabled={command.busy} onClick={clear}>Cancelar edición</button>}
           </div>
         </form>
       </Section>
@@ -458,11 +458,11 @@ export default function FleetPage() {
 
   return (
     <Page title="Micro" subtitle="Gestiona líneas, buses y asignaciones de conductores.">
-      <div role="tablist" aria-label="Gestión de micros" className="flex gap-2 overflow-x-auto border-b border-line pb-3">
+      <div role="tablist" aria-label="Gestión de micros" className="flex gap-2 overflow-x-auto border-b border-(--psj-line) pb-3">
         {tabs.map((item, index) => (
           <button key={item.id} ref={(node) => { buttons.current[index] = node; }} type="button" role="tab"
             id={`tab-${item.id}`} aria-selected={tab === item.id} aria-controls={`panel-${item.id}`} tabIndex={tab === item.id ? 0 : -1}
-            className={`btn shrink-0 ${tab === item.id ? "btn-primary" : "btn-outline"}`}
+            className={`psj-btn shrink-0 ${tab === item.id ? "psj-btn-primary" : "psj-btn-outline"}`}
             onClick={() => setTab(item.id)} onKeyDown={(event) => navigate(event, index)}>{item.label}</button>
         ))}
       </div>

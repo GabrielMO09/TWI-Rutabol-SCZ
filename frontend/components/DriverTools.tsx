@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { History, MapPinned, Power, Wrench } from "lucide-react";
-import { ErrorNote } from "@/components/AuthFrame";
+import { ErrorState } from "@/components/pasajero/ui";
 import { act } from "@/lib/api";
 import { useApp, type Bus } from "@/lib/store";
 
@@ -57,39 +57,39 @@ export function JornadaCard({ bus }: { bus: Bus }) {
   }
 
   return (
-    <section className="card flex flex-col gap-3 p-4" aria-labelledby="jor">
+    <section className="psj-card flex flex-col gap-3 p-4" aria-labelledby="jor">
       <div className="flex items-center justify-between gap-3">
         <div>
           <h2 id="jor" className="font-semibold">Jornada</h2>
-          <p className="text-sm text-muted">
+          <p className="text-sm text-(--psj-muted-strong)">
             Línea {bus.line} · Interno {bus.internal}{bus.plate ? ` · ${bus.plate}` : ""} ·{" "}
-            <span className={onDuty ? "font-medium text-brand" : "font-medium text-warn"}>
+            <span className={onDuty ? "font-medium text-(--psj-green)" : "font-medium text-[#92400e]"}>
               {onDuty ? "En servicio" : "Fuera de servicio"}
             </span>
           </p>
         </div>
-        <button className={`btn ${onDuty ? "btn-outline border-danger text-danger" : "btn-primary"} h-12`} onClick={toggle}>
+        <button className={`psj-btn ${onDuty ? "psj-btn-danger-outline" : "psj-btn-primary"}`} onClick={toggle}>
           <Power size={18} />
           {onDuty ? "Cerrar jornada" : "Iniciar jornada"}
         </button>
       </div>
       {onDuty && (
-        <label className="flex items-center gap-3 rounded-lg bg-soft p-3 text-sm">
-          <input type="checkbox" className="h-5 w-5 accent-[var(--g600)]" checked={gps} onChange={(e) => setGps(e.target.checked)} />
+        <label className="flex items-center gap-3 rounded-lg bg-(--psj-green-soft) p-3 text-sm">
+          <input type="checkbox" className="h-5 w-5 accent-(--psj-green)" checked={gps} onChange={(e) => setGps(e.target.checked)} />
           <span className="flex-1">
             <span className="flex items-center gap-1 font-medium">
               <MapPinned size={16} />
               Compartir mi ubicación GPS
             </span>
-            <span className="block text-xs text-muted">
+            <span className="block text-xs text-(--psj-muted-strong)">
               {bus.source === "gps" ? "Los pasajeros ven tu posición real." : "Sin GPS, la posición del mapa es simulada."}
               {last ? ` Último envío: ${new Date(last).toLocaleTimeString("es-BO")}.` : ""}
             </span>
           </span>
         </label>
       )}
-      {!onDuty && <p className="text-xs text-muted">Mientras no estés en servicio, tu unidad no aparece en el mapa público.</p>}
-      <ErrorNote text={msg} />
+      {!onDuty && <p className="text-xs text-(--psj-muted-strong)">Mientras no estés en servicio, tu unidad no aparece en el mapa público.</p>}
+      {msg && <ErrorState message={msg} />}
     </section>
   );
 }
@@ -119,45 +119,45 @@ export function OccupancyCorrection({ bus }: { bus: Bus }) {
 
   return (
     <>
-      <form onSubmit={submit} className="card flex flex-col gap-3 p-4" aria-labelledby="corr">
+      <form onSubmit={submit} className="psj-card flex flex-col gap-3 p-4" aria-labelledby="corr">
         <h2 id="corr" className="flex items-center gap-2 font-semibold">
           <Wrench size={18} />
           Corregir conteo de pasajeros
         </h2>
-        <p className="text-sm text-muted">
+        <p className="text-sm text-(--psj-muted-strong)">
           Usa esta opción si el conteo no coincide con las personas a bordo. Queda registrado con tu motivo.
         </p>
         <div className="grid grid-cols-[100px_1fr] gap-3">
           <div>
-            <label htmlFor="cv" className="label">A bordo</label>
-            <input id="cv" className="input" inputMode="numeric" value={value} onChange={(e) => setValue(e.target.value)} required />
+            <label htmlFor="cv" className="psj-label">A bordo</label>
+            <input id="cv" className="psj-input" inputMode="numeric" value={value} onChange={(e) => setValue(e.target.value)} required />
           </div>
           <div>
-            <label htmlFor="cr" className="label">Motivo</label>
-            <input id="cr" className="input" value={reason} onChange={(e) => setReason(e.target.value)} required />
+            <label htmlFor="cr" className="psj-label">Motivo</label>
+            <input id="cr" className="psj-input" value={reason} onChange={(e) => setReason(e.target.value)} required />
           </div>
         </div>
-        <ErrorNote text={msg} />
-        {ok && <p role="status" className="text-sm text-brand">Conteo corregido.</p>}
-        <button className="btn btn-outline self-start border-2 border-brand-dark">Registrar corrección</button>
+        {msg && <ErrorState message={msg} />}
+        {ok && <p role="status" className="text-sm text-(--psj-green)">Conteo corregido.</p>}
+        <button className="psj-btn psj-btn-outline self-start">Registrar corrección</button>
       </form>
 
-      <section className="card p-4" aria-labelledby="bit">
+      <section className="psj-card p-4" aria-labelledby="bit">
         <h2 id="bit" className="mb-2 flex items-center gap-2 font-semibold">
           <History size={18} />
           Últimos movimientos
         </h2>
         {world.occupancyEvents.length === 0 ? (
-          <p className="text-sm text-muted">Aún no hay movimientos en esta jornada.</p>
+          <p className="text-sm text-(--psj-muted-strong)">Aún no hay movimientos en esta jornada.</p>
         ) : (
-          <ul className="divide-y divide-line text-sm">
+          <ul className="divide-y divide-(--psj-line) text-sm">
             {world.occupancyEvents.map((ev) => (
               <li key={ev.id} className="flex items-center justify-between gap-2 py-1.5">
                 <span className="capitalize">
                   {ev.kind} · {ev.from} a {ev.to}
-                  {ev.reason ? <span className="text-muted"> · {ev.reason}</span> : null}
+                  {ev.reason ? <span className="text-(--psj-muted-strong)"> · {ev.reason}</span> : null}
                 </span>
-                <span className="text-xs text-muted">{new Date(ev.at).toLocaleTimeString("es-BO")}</span>
+                <span className="text-xs text-(--psj-muted-strong)">{new Date(ev.at).toLocaleTimeString("es-BO")}</span>
               </li>
             ))}
           </ul>

@@ -173,25 +173,25 @@ export default function ReportsPage() {
             <fieldset disabled={loading || downloading} className="grid gap-3 sm:grid-cols-3">
               <legend className="sr-only">Filtros del reporte</legend>
               <div>
-                <label htmlFor="report-from" className="label">Desde (opcional)</label>
-                <input id="report-from" type="date" className="input" value={filters.from}
+                <label htmlFor="report-from" className="psj-label">Desde (opcional)</label>
+                <input id="report-from" type="date" className="psj-input" value={filters.from}
                   onChange={(event) => setFilters({ ...filters, from: event.target.value })} />
               </div>
               <div>
-                <label htmlFor="report-to" className="label">Hasta (opcional)</label>
-                <input id="report-to" type="date" className="input" value={filters.to}
+                <label htmlFor="report-to" className="psj-label">Hasta (opcional)</label>
+                <input id="report-to" type="date" className="psj-input" value={filters.to}
                   onChange={(event) => setFilters({ ...filters, to: event.target.value })} />
               </div>
               <div>
-                <label htmlFor="report-line" className="label">Línea</label>
-                <select id="report-line" className="input" value={filters.line} onChange={(event) => setFilters({ ...filters, line: event.target.value })}>
+                <label htmlFor="report-line" className="psj-label">Línea</label>
+                <select id="report-line" className="psj-input" value={filters.line} onChange={(event) => setFilters({ ...filters, line: event.target.value })}>
                   <option value="">Todas las líneas</option>
                   {lines.data?.map((line) => <option key={line.id} value={line.id}>{line.id} · {line.name}</option>)}
                 </select>
               </div>
             </fieldset>
-            <p className="text-xs text-muted">Las fechas incluyen el día completo según la hora local. Deja ambas vacías para consultar todo el período disponible.</p>
-            <button className="btn btn-primary" disabled={loading || downloading}>{loading ? "Generando…" : "Generar vista previa"}</button>
+            <p className="text-xs text-(--psj-muted-strong)">Las fechas incluyen el día completo según la hora local. Deja ambas vacías para consultar todo el período disponible.</p>
+            <button className="psj-btn psj-btn-primary" disabled={loading || downloading}>{loading ? "Generando…" : "Generar vista previa"}</button>
           </form>
         </Section>
       </div>
@@ -200,23 +200,23 @@ export default function ReportsPage() {
       {!preview && !loading && !error && <Empty>Selecciona los filtros y genera una vista previa.</Empty>}
       {preview && (
         <>
-          {changed && <p role="status" className="rounded-lg bg-amber-50 p-3 text-sm text-warn print:hidden">Los filtros cambiaron. Genera una nueva vista previa para descargar o imprimir.</p>}
+          {changed && <p role="status" className="rounded-lg bg-(--psj-warn-soft) p-3 text-sm text-[#92400e] print:hidden">Los filtros cambiaron. Genera una nueva vista previa para descargar o imprimir.</p>}
           <Section title="Vista previa">
             <p className="mb-2 text-sm">Período: {preview.filters.from || "Inicio disponible"} a {preview.filters.to || "Último registro"} · Línea: {preview.filters.line || "Todas"}</p>
-            <p className="mb-4 text-xs text-muted">Generado: {date(preview.generatedAt)}</p>
+            <p className="mb-4 text-xs text-(--psj-muted-strong)">Generado: {date(preview.generatedAt)}</p>
             <div className="mb-4 grid gap-3 sm:grid-cols-2">
               <StatCard label="Pasajes en la vista previa" value={preview.report.rows.length} />
               <StatCard label="Suma de tarifas de las filas" value={money(revenue)} />
             </div>
             <div className="mb-4 flex flex-wrap gap-2 print:hidden">
-              <button type="button" className="btn btn-primary" disabled={downloading || loading || changed} onClick={() => void exportCsv()}>
+              <button type="button" className="psj-btn psj-btn-primary" disabled={downloading || loading || changed} onClick={() => void exportCsv()}>
                 <FileDown size={18} aria-hidden="true" />{downloading ? "Descargando…" : "Descargar CSV"}
               </button>
-              <button type="button" className="btn btn-outline" disabled={downloading || loading || changed} onClick={printReport}>
+              <button type="button" className="psj-btn psj-btn-outline" disabled={downloading || loading || changed} onClick={printReport}>
                 <Printer size={18} aria-hidden="true" />Imprimir / PDF
               </button>
             </div>
-            <p className="mb-4 text-xs text-muted print:hidden">El CSV consulta nuevamente el servidor con estos filtros; puede incluir movimientos posteriores a la vista previa.</p>
+            <p className="mb-4 text-xs text-(--psj-muted-strong) print:hidden">El CSV consulta nuevamente el servidor con estos filtros; puede incluir movimientos posteriores a la vista previa.</p>
             {!preview.report.rows.length ? <Empty>No hay viajes en el período seleccionado.</Empty> : (
               <div className="control-report-table overflow-x-auto" tabIndex={0} role="region" aria-label="Vista previa del reporte">
                 <Table caption="Detalle del reporte de pasajes" headers={["Pasaje", "Fecha", "Línea", "Interno", "Categoría", "Tarifa", "Método", "Estado"]}>
@@ -235,7 +235,7 @@ export default function ReportsPage() {
             {!Object.keys(preview.report.totals).length ? <Empty>No hay totales adicionales.</Empty> : (
               <dl className="grid gap-3 sm:grid-cols-2">
                 {Object.entries(preview.report.totals).map(([key, value]) => (
-                  <div key={key} className="rounded-lg bg-soft p-3">
+                  <div key={key} className="rounded-lg bg-(--psj-green-soft) p-3">
                     <dt className="mb-2 text-sm font-semibold">{totalLabel(key)}</dt>
                     <dd className="break-words text-sm"><TotalValue value={value} /></dd>
                   </div>

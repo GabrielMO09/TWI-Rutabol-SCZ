@@ -22,18 +22,18 @@ export default function AuditPage() {
     <Page title="Auditoría" subtitle="Últimos 200 registros de acciones y resultados del sistema.">
       <div className="grid gap-3 sm:grid-cols-2">
         <div>
-          <label htmlFor="audit-search" className="label">Buscar en los registros</label>
-          <input id="audit-search" type="search" className="input" value={search} onChange={(event) => setSearch(event.target.value)} />
+          <label htmlFor="audit-search" className="psj-label">Buscar en los registros</label>
+          <input id="audit-search" type="search" className="psj-input" value={search} onChange={(event) => setSearch(event.target.value)} />
         </div>
         <div>
-          <label htmlFor="audit-result" className="label">Resultado</label>
-          <select id="audit-result" className="input" value={result} onChange={(event) => setResult(event.target.value)}>
+          <label htmlFor="audit-result" className="psj-label">Resultado</label>
+          <select id="audit-result" className="psj-input" value={result} onChange={(event) => setResult(event.target.value)}>
             <option value="">Todos los resultados</option><option value="ok">Correcto</option><option value="error">Error</option>
           </select>
         </div>
       </div>
       <QueryState {...query} />
-      {query.data && <p role="status" className="text-sm text-muted">{entries.length} registros visibles de {query.data.length} cargados.</p>}
+      {query.data && <p role="status" className="text-sm text-(--psj-muted-strong)">{entries.length} registros visibles de {query.data.length} cargados.</p>}
       {!query.loading && !entries.length ? <Empty>No hay registros para estos filtros.</Empty> : !!entries.length && (
         <Table caption="Registro de auditoría" headers={["Fecha", "Actor", "Rol", "Acción", "Objetivo", "Resultado", "Detalle"]}>
           {entries.map((entry) => (

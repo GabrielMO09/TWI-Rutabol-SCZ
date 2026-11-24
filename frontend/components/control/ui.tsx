@@ -2,7 +2,7 @@
 
 import { useRef, useState, type ReactNode } from "react";
 import { CheckCircle2, RefreshCw } from "lucide-react";
-import { ErrorNote } from "@/components/AuthFrame";
+import { ErrorState } from "@/components/pasajero/ui";
 import { act } from "@/lib/api";
 
 export const date = (value?: number) =>
@@ -58,12 +58,12 @@ export function Chip({ children, tone = "neutral" }: {
   tone?: "good" | "warn" | "danger" | "neutral";
 }) {
   const colors = {
-    good: "bg-green-100 text-brand-dark",
-    warn: "bg-amber-100 text-warn",
-    danger: "bg-red-100 text-danger",
-    neutral: "bg-soft text-ink",
+    good: "psj-pill-success",
+    warn: "psj-pill-warn",
+    danger: "psj-pill-danger",
+    neutral: "psj-pill-neutral",
   };
-  return <span className={`chip ${colors[tone]}`}>{children}</span>;
+  return <span className={`psj-pill ${colors[tone]}`}>{children}</span>;
 }
 
 export function Status({ value }: { value: string }) {
@@ -83,9 +83,9 @@ export function Page({ title, subtitle, children }: {
   return (
     <div className="flex min-w-0 flex-col gap-5">
       <div>
-        <p className="mb-1 text-sm font-medium text-brand-dark">Centro de Control</p>
+        <p className="mb-1 text-sm font-medium text-(--psj-green)">Centro de Control</p>
         <h1 className="text-2xl font-semibold tracking-tight">{title}</h1>
-        {subtitle && <p className="mt-1 text-sm text-muted">{subtitle}</p>}
+        {subtitle && <p className="mt-1 text-sm text-(--psj-muted-strong)">{subtitle}</p>}
       </div>
       {children}
     </div>
@@ -94,7 +94,7 @@ export function Page({ title, subtitle, children }: {
 
 export function Section({ title, children }: { title: string; children: ReactNode }) {
   return (
-    <section className="card min-w-0 p-4">
+    <section className="psj-card min-w-0 p-4">
       <h2 className="mb-4 text-lg font-semibold">{title}</h2>
       {children}
     </section>
@@ -107,13 +107,13 @@ export function Table({ headers, children, caption }: {
   caption: string;
 }) {
   return (
-    <div className="overflow-x-auto rounded-lg border border-line" tabIndex={0} role="region" aria-label={caption}>
+    <div className="overflow-x-auto rounded-xl border border-(--psj-line) bg-(--psj-surface)" tabIndex={0} role="region" aria-label={caption}>
       <table className="w-full text-left text-sm">
         <caption className="sr-only">{caption}</caption>
-        <thead className="bg-soft">
-          <tr>{headers.map((h) => <th key={h} scope="col" className="whitespace-nowrap px-3 py-3 font-semibold">{h}</th>)}</tr>
+        <thead className="bg-(--psj-bg) text-(--psj-muted-strong)">
+          <tr>{headers.map((h) => <th key={h} scope="col" className="whitespace-nowrap px-3 py-3 text-xs font-semibold uppercase tracking-wide">{h}</th>)}</tr>
         </thead>
-        <tbody className="divide-y divide-line [&_td]:px-3 [&_td]:py-3 [&_td]:align-top">
+        <tbody className="divide-y divide-(--psj-line) [&_td]:px-3 [&_td]:py-3 [&_td]:align-top">
           {children}
         </tbody>
       </table>
@@ -122,7 +122,7 @@ export function Table({ headers, children, caption }: {
 }
 
 export function Empty({ children = "No hay registros para mostrar." }: { children?: ReactNode }) {
-  return <p role="status" className="rounded-lg bg-soft p-4 text-sm text-muted">{children}</p>;
+  return <p role="status" className="rounded-lg bg-(--psj-bg) p-4 text-center text-sm text-(--psj-muted-strong)">{children}</p>;
 }
 
 export function QueryState({ loading, error, reload }: {
@@ -132,11 +132,11 @@ export function QueryState({ loading, error, reload }: {
 }) {
   return (
     <div className="flex flex-col gap-2 print:hidden">
-      {loading && <p role="status" className="text-sm text-muted">Cargando datos…</p>}
-      <ErrorNote text={error} />
-      {error && <p className="text-sm text-muted">Los datos visibles pueden estar desactualizados.</p>}
+      {loading && <p role="status" className="text-sm text-(--psj-muted-strong)">Cargando datos…</p>}
+      {error && <ErrorState message={error} />}
+      {error && <p className="text-sm text-(--psj-muted-strong)">Los datos visibles pueden estar desactualizados.</p>}
       <div>
-        <button type="button" className="btn btn-outline" disabled={loading} onClick={() => void reload()}>
+        <button type="button" className="psj-btn psj-btn-outline" disabled={loading} onClick={() => void reload()}>
           <RefreshCw size={16} aria-hidden="true" /> Actualizar
         </button>
       </div>
@@ -147,9 +147,9 @@ export function QueryState({ loading, error, reload }: {
 export function Notice({ error, success }: { error: string | null; success: string | null }) {
   return (
     <div aria-live="polite" className="space-y-2">
-      <ErrorNote text={error} />
+      {error && <ErrorState message={error} />}
       {success && (
-        <p role="status" className="flex items-center gap-2 rounded-lg bg-soft p-3 text-sm text-brand-dark">
+        <p role="status" className="flex items-center gap-2 rounded-lg bg-(--psj-green-soft) p-3 text-sm text-(--psj-green-dark)">
           <CheckCircle2 size={18} aria-hidden="true" />{success}
         </p>
       )}
@@ -159,8 +159,8 @@ export function Notice({ error, success }: { error: string | null; success: stri
 
 export function StatCard({ label, value }: { label: string; value: ReactNode }) {
   return (
-    <div className="card p-4">
-      <p className="text-sm text-muted">{label}</p>
+    <div className="psj-card p-4">
+      <p className="text-sm text-(--psj-muted-strong)">{label}</p>
       <p className="mt-2 text-2xl font-semibold tabular-nums">{value}</p>
     </div>
   );
