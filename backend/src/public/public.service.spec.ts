@@ -22,6 +22,7 @@ describe('Consultas públicas', () => {
     buses[2].lastSeen = Date.now() - 30001;
     buses[3].onDuty = false;
     buses[4].active = false;
+    for (const extra of buses.slice(5)) extra.active = false; // rutas ficticias añadidas: fuera del caso
     const result = context.publicService.nearby({ lat: '-17.7834', lng: '-63.1821' });
     expect(result.radiusKm).toBe(5);
     expect(result.items.map((item) => item.bus.id)).toEqual(['17-045']);

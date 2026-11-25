@@ -6,6 +6,7 @@ import { ChevronLeft, ChevronRight, KeyRound, LogOut, MonitorSmartphone, Save, T
 import { dateTime } from "@/components/pasajero/format";
 import { ErrorState, Notice, Skeleton, StatusPill } from "@/components/pasajero/ui";
 import { act, useFetch } from "@/lib/api";
+import { CATEGORY_LABEL } from "@/lib/data";
 import { useApp } from "@/lib/store";
 
 interface Session {
@@ -51,7 +52,7 @@ export default function Perfil() {
   if (!profile) return null;
 
   return (
-    <div className="mx-auto flex max-w-4xl flex-col gap-4 md:grid md:grid-cols-[240px_1fr] md:items-start">
+    <div className="mx-auto flex max-w-4xl flex-col gap-4 md:grid md:grid-cols-[240px_1fr] md:items-start lg:max-w-5xl lg:grid-cols-[280px_1fr] lg:gap-6">
       <h1 className="sr-only">Mi perfil</h1>
 
       <nav aria-label="Secciones del perfil" className={`${sec ? "hidden md:flex" : "flex"} psj-card flex-col gap-1 p-2`}>
@@ -81,7 +82,24 @@ export default function Perfil() {
         </button>
       </nav>
 
-      <div className={`${sec ? "flex" : "hidden md:flex"} flex-col gap-4`}>
+      <div className={`${sec ? "flex" : "hidden md:flex"} flex-col gap-4 lg:max-w-2xl`}>
+        <div className="psj-card hidden items-center gap-4 p-5 lg:flex">
+          <span className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-full bg-(--psj-green-soft) text-(--psj-green)">
+            {profile.photo ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={profile.photo} alt="" className="h-full w-full object-cover" />
+            ) : (
+              <UserRound size={28} aria-hidden="true" />
+            )}
+          </span>
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-lg font-semibold">{profile.name}</p>
+            <p className="text-sm text-(--psj-muted-strong)">{CATEGORY_LABEL[profile.category ?? "general"]} · {profile.code ?? "-"}</p>
+          </div>
+          <StatusPill tone={profile.status === "suspendido" ? "danger" : "success"}>
+            Cuenta {profile.status === "suspendido" ? "suspendida" : "activa"}
+          </StatusPill>
+        </div>
         <button type="button" className="psj-btn psj-btn-ghost self-start px-2 md:hidden" onClick={() => pick(null)}>
           <ChevronLeft size={18} aria-hidden="true" />
           Perfil
@@ -91,7 +109,7 @@ export default function Perfil() {
 
         {active === "datos" && (
           <form
-            className="psj-card flex flex-col gap-3 p-4"
+            className="psj-card flex flex-col gap-3 p-4 lg:p-6"
             onSubmit={(e) => {
               e.preventDefault();
               void run(act("/profile", "PATCH", { name }), "Datos actualizados.", () => void reloadProfile());
@@ -118,7 +136,7 @@ export default function Perfil() {
 
         {active === "password" && (
           <form
-            className="psj-card flex flex-col gap-3 p-4"
+            className="psj-card flex flex-col gap-3 p-4 lg:p-6"
             onSubmit={(e) => {
               e.preventDefault();
               void run(act("/profile/password", "POST", { current, next }), "Contraseña actualizada.", () => {
@@ -142,7 +160,7 @@ export default function Perfil() {
         )}
 
         {active === "sesiones" && (
-          <section className="psj-card p-4" aria-labelledby="ses">
+          <section className="psj-card p-4 lg:p-6" aria-labelledby="ses">
             <h2 id="ses" className="mb-2 font-semibold">Sesiones activas</h2>
             {sessionsError && !sessions ? (
               <ErrorState message={sessionsError} onRetry={() => void reloadSessions()} />

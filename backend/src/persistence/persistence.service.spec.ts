@@ -112,11 +112,11 @@ describe('PersistenceService', () => {
   it('con la BD vacía guarda líneas, unidades, conductores y la tarifa inicial', async () => {
     const { ctx, db, persistence } = await setup();
     await persistence.hydrate();
-    expect(db.count('INSERT INTO transporte.linea')).toBe(3);
-    expect(db.count('INSERT INTO transporte.punto_ruta')).toBe(3);
-    expect(db.count('INSERT INTO transporte.unidad_transporte')).toBe(5);
-    expect(db.count('INSERT INTO rutabol.linea')).toBe(3);
-    expect(db.count('INSERT INTO rutabol.unidad_transporte')).toBe(5);
+    expect(db.count('INSERT INTO transporte.linea')).toBe(13);
+    expect(db.count('INSERT INTO transporte.punto_ruta')).toBe(13);
+    expect(db.count('INSERT INTO transporte.unidad_transporte')).toBe(15);
+    expect(db.count('INSERT INTO rutabol.linea')).toBe(13);
+    expect(db.count('INSERT INTO rutabol.unidad_transporte')).toBe(15);
     expect(db.count('INSERT INTO rutabol.conductor')).toBe(3);
     expect(db.count('INSERT INTO rutabol.asignacion_conductor')).toBe(3);
     expect(db.count('INSERT INTO rutabol.tarifa')).toBe(3);

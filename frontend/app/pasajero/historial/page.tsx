@@ -5,7 +5,7 @@ import { useMemo, useState } from "react";
 import { BusFront, ChevronRight, MessageSquareWarning, Printer, Repeat, SearchX } from "lucide-react";
 import { bs, dayLabel, time } from "@/components/pasajero/format";
 import { EmptyState, LineBadge, Sheet, StatusPill, type Tone } from "@/components/pasajero/ui";
-import { CATEGORY_LABEL } from "@/lib/data";
+import { CATEGORY_LABEL, FARES } from "@/lib/data";
 import { useApp, type Ticket } from "@/lib/store";
 
 const STATUS: Record<Ticket["status"], { label: string; tone: Tone }> = {
@@ -51,6 +51,12 @@ export default function Historial() {
     return [...map];
   }, [filtered]);
 
+  // Gasto y ahorro solo con viajes cobrados; el ahorro compara contra la tarifa general vigente.
+  const paid = filtered.filter((t) => t.status === "pagado" || t.status === "abordado");
+  const spent = paid.reduce((sum, t) => sum + t.fare, 0);
+  const saved = paid.reduce((sum, t) => (t.category === "general" ? sum : sum + Math.max(0, FARES.general - t.fare)), 0);
+  const hasBenefit = paid.some((t) => t.category !== "general");
+
   const filtering = !!(status || line || from || to);
   function clear() {
     setStatus("");
@@ -74,8 +80,21 @@ export default function Historial() {
   }
 
   return (
-    <div className="mx-auto flex max-w-3xl flex-col gap-4">
+    <div className="mx-auto flex max-w-3xl flex-col gap-4 lg:max-w-5xl">
       <h1 className="sr-only">Historial de viajes</h1>
+
+      <dl className="psj-screen-only hidden gap-4 lg:grid lg:grid-cols-3">
+        {[
+          { label: "Viajes realizados", value: String(paid.length), show: true },
+          { label: "Importe gastado", value: bs(spent), show: true },
+          { label: "Ahorro estudiantil", value: bs(saved), show: hasBenefit },
+        ].filter((k) => k.show).map((k) => (
+          <div key={k.label} className="psj-card p-4">
+            <dt className="text-sm text-(--psj-muted-strong)">{k.label}</dt>
+            <dd className="mt-1 text-2xl font-bold tabular-nums">{k.value}</dd>
+          </div>
+        ))}
+      </dl>
 
       <section aria-label="Filtros" className="psj-screen-only psj-card grid grid-cols-2 gap-3 p-3 md:grid-cols-4">
         <div>
@@ -121,7 +140,51 @@ export default function Historial() {
             </EmptyState>
           </div>
         ) : (
-          groups.map(([label, items]) => (
+          <>
+          <div className="psj-card hidden overflow-x-auto lg:block">
+            <table className="w-full text-sm">
+              <caption className="sr-only">Viajes realizados</caption>
+              <thead>
+                <tr className="border-b border-(--psj-line) text-left text-xs uppercase tracking-wide text-(--psj-muted-strong)">
+                  <th scope="col" className="px-4 py-3 font-semibold">Fecha</th>
+                  <th scope="col" className="px-4 py-3 font-semibold">Unidad</th>
+                  <th scope="col" className="px-4 py-3 font-semibold">Categoría</th>
+                  <th scope="col" className="px-4 py-3 text-right font-semibold">Importe</th>
+                  <th scope="col" className="px-4 py-3 font-semibold">Estado</th>
+                  <th scope="col" className="px-4 py-3"><span className="sr-only">Acciones</span></th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-(--psj-line)">
+                {filtered.map((t) => (
+                  <tr key={t.id} className="transition-colors hover:bg-(--psj-green-soft)">
+                    <td className="px-4 py-3 capitalize">{dayLabel(t.at)}, {time(t.at)}</td>
+                    <td className="px-4 py-3">
+                      <span className="flex items-center gap-3">
+                        <LineBadge line={lineOf(t)} />
+                        <span className="font-semibold">Línea {lineOf(t)} · Interno {internalOf(t)}</span>
+                      </span>
+                    </td>
+                    <td className="px-4 py-3">{CATEGORY_LABEL[t.category]}</td>
+                    <td className="px-4 py-3 text-right font-semibold tabular-nums">{bs(t.fare)}</td>
+                    <td className="px-4 py-3"><StatusPill tone={STATUS[t.status].tone}>{STATUS[t.status].label}</StatusPill></td>
+                    <td className="px-4 py-3 text-right">
+                      <button
+                        type="button"
+                        onClick={() => setDetail(t)}
+                        aria-label={`Ver detalle: línea ${lineOf(t)}, interno ${internalOf(t)}, ${bs(t.fare)}`}
+                        className="psj-btn psj-btn-ghost min-h-11 px-2"
+                      >
+                        Detalle
+                        <ChevronRight size={16} aria-hidden="true" />
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <div className="flex flex-col gap-4 lg:hidden">
+          {groups.map(([label, items]) => (
             <section key={label} aria-label={label}>
               <h2 className="mb-2 text-sm font-semibold capitalize text-(--psj-muted-strong)">{label}</h2>
               <ul className="psj-card divide-y divide-(--psj-line) overflow-hidden">
@@ -148,7 +211,9 @@ export default function Historial() {
                 ))}
               </ul>
             </section>
-          ))
+          ))}
+          </div>
+          </>
         )}
       </div>
 

@@ -23,7 +23,7 @@ describe('MicrosService', () => {
   });
 
   it('lista las unidades y rechaza identificadores inexistentes', () => {
-    expect(context.micros.listMicros()).toHaveLength(5);
+    expect(context.micros.listMicros()).toHaveLength(15);
     expect(context.micros.findMicroById('17-045')).toMatchObject({
       max: 25, occupancy: 12, progress: 0.3, onDuty: true, source: 'simulado',
     });

@@ -115,13 +115,15 @@ export default function Acreditacion() {
   }
 
   return (
-    <div className="mx-auto flex max-w-xl flex-col gap-4">
+    <div className="mx-auto flex max-w-xl flex-col gap-4 lg:grid lg:max-w-5xl lg:grid-cols-2 lg:items-start lg:gap-6">
       <h1 className="sr-only">Acreditación {type === "escolar" ? "escolar (RUDE)" : "universitaria"}</h1>
 
-      <section className="psj-card p-4" aria-label="Progreso">
+      <section className="psj-card p-4 lg:col-span-2 lg:px-10 lg:py-6" aria-label="Progreso">
         <Stepper step={step} university={type === "universitario"} />
       </section>
 
+      {/* "contents" en móvil: el orden vertical original no cambia. */}
+      <div className="contents lg:col-start-1 lg:row-start-2 lg:flex lg:flex-col lg:gap-4">
       {loading ? (
         <Skeleton className="h-28 w-full rounded-xl" />
       ) : acc && st ? (
@@ -176,8 +178,9 @@ export default function Acreditacion() {
           <button className="psj-btn psj-btn-primary">Confirmar correo</button>
         </form>
       )}
+      </div>
 
-      <form onSubmit={request} className="psj-card flex flex-col gap-3 p-4">
+      <form onSubmit={request} className="psj-card flex flex-col gap-3 p-4 lg:col-start-2 lg:row-start-2 lg:p-6">
         <h2 className="font-semibold">{acc ? "Renovar o corregir solicitud" : "Solicitar acreditación"}</h2>
         <div>
           <label htmlFor="inst" className="psj-label">{type === "escolar" ? "Unidad educativa" : "Universidad"}</label>

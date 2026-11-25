@@ -50,6 +50,47 @@ export class MemoryService implements OnModuleInit, OnModuleDestroy {
         [-17.788, -63.143], [-17.79, -63.126],
       ],
     },
+    // Rutas ficticias de demostración: cada una toma un rumbo distinto al de las tres primeras.
+    {
+      id: '2', name: 'Línea 2 - Oeste', active: true,
+      waypoints: [[-17.7834, -63.1821], [-17.784, -63.195], [-17.786, -63.212], [-17.788, -63.23]],
+    },
+    {
+      id: '5', name: 'Línea 5 - Noreste', active: true,
+      waypoints: [[-17.7834, -63.1821], [-17.772, -63.168], [-17.762, -63.155], [-17.752, -63.142]],
+    },
+    {
+      id: '8', name: 'Línea 8 - Noroeste', active: true,
+      waypoints: [[-17.7834, -63.1821], [-17.772, -63.194], [-17.762, -63.206], [-17.751, -63.219]],
+    },
+    {
+      id: '23', name: 'Línea 23 - Sureste', active: true,
+      waypoints: [[-17.7834, -63.1821], [-17.794, -63.17], [-17.805, -63.158], [-17.816, -63.146]],
+    },
+    {
+      id: '31', name: 'Línea 31 - Suroeste', active: true,
+      waypoints: [[-17.7834, -63.1821], [-17.793, -63.194], [-17.803, -63.206], [-17.815, -63.218]],
+    },
+    {
+      id: '35', name: 'Línea 35 - Transversal Oeste', active: true,
+      waypoints: [[-17.745, -63.215], [-17.77, -63.213], [-17.8, -63.212], [-17.83, -63.21]],
+    },
+    {
+      id: '52', name: 'Línea 52 - Transversal Este', active: true,
+      waypoints: [[-17.75, -63.13], [-17.775, -63.133], [-17.8, -63.135], [-17.825, -63.137]],
+    },
+    {
+      id: '60', name: 'Línea 60 - Cruce Norte', active: true,
+      waypoints: [[-17.755, -63.22], [-17.758, -63.19], [-17.757, -63.16], [-17.755, -63.13]],
+    },
+    {
+      id: '72', name: 'Línea 72 - Cruce Sur', active: true,
+      waypoints: [[-17.82, -63.22], [-17.822, -63.19], [-17.821, -63.16], [-17.82, -63.13]],
+    },
+    {
+      id: '85', name: 'Línea 85 - Diagonal', active: true,
+      waypoints: [[-17.745, -63.205], [-17.765, -63.19], [-17.8, -63.165], [-17.83, -63.14]],
+    },
   ];
   readonly buses: Bus[];
   readonly reqs: BoardingReq[] = [];
@@ -94,6 +135,16 @@ export class MemoryService implements OnModuleInit, OnModuleDestroy {
       ['44', '057', 22, 9, 0.4, '2347-CDE'],
       ['11', '033', 18, 6, 0.5, '2348-DEF'],
       ['11', '099', 25, 2, 0.9, '2349-EFG'],
+      ['2', '012', 22, 8, 0.35, '2350-FGH'],
+      ['5', '021', 20, 14, 0.6, '2351-GHI'],
+      ['8', '034', 25, 5, 0.2, '2352-HIJ'],
+      ['23', '046', 18, 11, 0.7, '2353-IJK'],
+      ['31', '052', 22, 16, 0.45, '2354-JKL'],
+      ['35', '063', 25, 7, 0.8, '2355-KLM'],
+      ['52', '071', 20, 3, 0.15, '2356-LMN'],
+      ['60', '084', 22, 12, 0.55, '2357-MNO'],
+      ['72', '096', 18, 9, 0.65, '2358-NOP'],
+      ['85', '108', 25, 18, 0.4, '2359-OPQ'],
     ];
     this.buses = seeds.map(([line, internal, max, occupancy, progress, plate]) => ({
       id: `${line}-${internal}`, line, internal, max, occupancy, progress, plate,

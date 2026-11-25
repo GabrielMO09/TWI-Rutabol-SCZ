@@ -17,8 +17,8 @@ export default function Validacion() {
   const full = bus.occupancy >= bus.max;
 
   return (
-    <div className="mx-auto flex max-w-3xl flex-col gap-4">
-      <div className="flex items-end justify-between">
+    <div className="mx-auto flex max-w-3xl flex-col gap-4 lg:grid lg:max-w-[1280px] lg:grid-cols-[minmax(0,1fr)_440px] lg:items-start lg:gap-6">
+      <div className="flex items-end justify-between lg:col-span-2">
         <div>
           <h1 className="text-lg font-semibold">Validación rápida</h1>
           <p className="text-sm text-(--psj-muted-strong)">Compara la foto con la persona que sube.</p>
@@ -28,6 +28,21 @@ export default function Validacion() {
         </p>
       </div>
 
+      <dl className="hidden gap-6 lg:col-span-2 lg:grid lg:grid-cols-2">
+        <div className="psj-card flex items-center justify-between p-6">
+          <dt className="text-sm text-(--psj-muted-strong)">Validaciones pendientes</dt>
+          <dd className="text-3xl font-bold tabular-nums">{reqs.length}</dd>
+        </div>
+        <div className="psj-card flex items-center justify-between p-6">
+          <dt className="text-sm text-(--psj-muted-strong)">Ocupación</dt>
+          <dd className="text-3xl font-bold tabular-nums">
+            {bus.occupancy}<span className="text-lg font-semibold text-(--psj-muted-strong)"> / {bus.max}</span>
+          </dd>
+        </div>
+      </dl>
+
+      {/* "contents" en móvil: el orden vertical original no cambia. */}
+      <div className="contents lg:col-start-1 lg:flex lg:flex-col lg:gap-4">
       {full && (
         <div className="psj-card flex items-center gap-3 border-(--psj-danger) bg-(--psj-danger-soft) p-4 font-semibold text-(--psj-danger)" role="alert">
           <Ban size={24} className="shrink-0" />
@@ -42,8 +57,8 @@ export default function Validacion() {
 
       <ul className="flex flex-col gap-3">
         {reqs.map((r) => (
-          <li key={r.id} className="psj-card p-4">
-            <div className="flex gap-4">
+          <li key={r.id} className="psj-card p-4 lg:flex lg:items-center lg:gap-6 lg:p-6">
+            <div className="flex gap-4 lg:min-w-0 lg:flex-1">
               <div className="flex h-24 w-24 shrink-0 sm:h-28 sm:w-28 items-center justify-center overflow-hidden rounded-xl border border-(--psj-line) bg-(--psj-green-soft) text-(--psj-muted-strong)">
                 {r.photo ? (
                   // eslint-disable-next-line @next/next/no-img-element
@@ -60,7 +75,7 @@ export default function Validacion() {
                 </p>
               </div>
             </div>
-            <div className="mt-4 grid grid-cols-2 gap-3">
+            <div className="mt-4 grid grid-cols-2 gap-3 lg:mt-0 lg:w-72 lg:shrink-0">
               <button
                 className="psj-btn psj-btn-primary psj-btn-lg"
                 disabled={full}
@@ -80,11 +95,14 @@ export default function Validacion() {
           </li>
         ))}
       </ul>
-      <div className="grid gap-4 md:grid-cols-2">
-        <QrVerifier />
-        <CashPanel bus={bus} />
       </div>
-      <PassRedeem />
+      <div className="contents lg:col-start-2 lg:row-start-3 lg:flex lg:flex-col lg:gap-6">
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-1 lg:gap-6">
+          <QrVerifier />
+          <CashPanel bus={bus} />
+        </div>
+        <PassRedeem />
+      </div>
     </div>
   );
 }

@@ -82,9 +82,9 @@ function Form() {
   }
 
   return (
-    <div className="mx-auto flex max-w-2xl flex-col gap-4">
+    <div className="mx-auto flex max-w-2xl flex-col gap-4 lg:max-w-5xl">
       <div className="flex items-center justify-between gap-3">
-        <h1 className="text-lg font-semibold">Reclamos por cobro indebido</h1>
+        <h1 className="text-lg font-semibold lg:text-xl">Reclamos por cobro indebido</h1>
         <button type="button" className="psj-btn psj-btn-primary" onClick={() => { setOk(false); setOpen(true); }}>
           <Plus size={18} aria-hidden="true" />
           Nuevo reclamo
@@ -92,6 +92,17 @@ function Form() {
       </div>
 
       {ok && <Notice>Reclamo registrado. Te avisaremos cuando cambie su estado.</Notice>}
+
+      {claims && claims.length > 0 && (
+        <dl className="hidden grid-cols-4 gap-3 lg:grid">
+          {(Object.keys(STATUS) as Claim["status"][]).map((s) => (
+            <div key={s} className="psj-card flex items-center justify-between p-4">
+              <dt><StatusPill tone={STATUS[s].tone}>{STATUS[s].label}</StatusPill></dt>
+              <dd className="text-2xl font-bold tabular-nums">{claims.filter((c) => c.status === s).length}</dd>
+            </div>
+          ))}
+        </dl>
+      )}
 
       <section aria-labelledby="mis" className="flex flex-col gap-2">
         <h2 id="mis" className="sr-only">Mis reclamos</h2>
@@ -106,7 +117,7 @@ function Form() {
             </EmptyState>
           </div>
         ) : (
-          <ul className="flex flex-col gap-3">
+          <ul className="flex flex-col gap-3 lg:grid lg:grid-cols-2 lg:items-start lg:gap-4">
             {claims.map((c) => (
               <li key={c.id} className="psj-card flex flex-col gap-2 p-4 text-sm">
                 <div className="flex items-center gap-3">
@@ -138,7 +149,7 @@ function Form() {
         )}
       </section>
 
-      <Sheet open={open} onClose={() => setOpen(false)} title="Nuevo reclamo">
+      <Sheet open={open} onClose={() => setOpen(false)} title="Nuevo reclamo" wide>
         <form onSubmit={submit} className="flex flex-col gap-4">
           <fieldset className="flex flex-col gap-3">
             <legend className="mb-2 text-sm font-semibold">Viaje</legend>

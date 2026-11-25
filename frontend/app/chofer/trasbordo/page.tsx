@@ -36,17 +36,17 @@ export default function Trasbordo() {
   }
 
   return (
-    <div className="mx-auto flex max-w-3xl flex-col gap-5">
+    <div className="mx-auto flex max-w-3xl flex-col gap-5 lg:grid lg:max-w-[1280px] lg:grid-cols-2 lg:items-start lg:gap-6">
       <h1 className="sr-only">Trasbordos</h1>
-      {error && <ErrorState message={error} />}
+      {error && <div className="lg:col-span-2"><ErrorState message={error} /></div>}
       {ok && (
-        <p className="flex items-center gap-2 rounded-lg border border-green-200 bg-green-50 px-3 py-2 text-sm text-(--psj-green-dark)" role="status">
+        <p className="lg:col-span-2 flex items-center gap-2 rounded-lg border border-green-200 bg-green-50 px-3 py-2 text-sm text-(--psj-green-dark)" role="status">
           <CheckCircle2 size={16} />
           {ok}
         </p>
       )}
 
-      <section className="psj-card p-4">
+      <section className="psj-card psj-accent-danger p-4 lg:p-6">
         <h2 className="flex items-center gap-2 text-lg font-semibold">
           <Siren size={20} className="text-(--psj-danger)" />
           Trasbordo de emergencia
@@ -102,7 +102,7 @@ export default function Trasbordo() {
         )}
       </section>
 
-      <section className="psj-card p-4">
+      <section className="psj-card psj-accent-ok p-4 lg:p-6">
         <h2 className="flex items-center gap-2 text-lg font-semibold">
           <ArrowRightLeft size={20} className="text-(--psj-green)" />
           Trasbordo por descanso

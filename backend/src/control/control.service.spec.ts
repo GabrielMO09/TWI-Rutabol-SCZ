@@ -45,7 +45,7 @@ describe('Centro de Control', () => {
       expect(overview.health.find((item) => item.id === id)!.ok).toBe(false);
     }
     expect(overview.kpis).toMatchObject({
-      busesActivos: 5, busesSinSenal: 1, incidentesAbiertos: 1,
+      busesActivos: 15, busesSinSenal: 1, incidentesAbiertos: 1,
       reclamosAbiertos: 1, recargasPendientes: 1,
     });
     context.memory.onModuleDestroy();

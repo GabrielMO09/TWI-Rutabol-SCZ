@@ -66,7 +66,7 @@ function OccupancyBar({ occupancy, max }: { occupancy: number; max: number }) {
   );
 }
 
-function Panel({ n, onPick, onCollapse }: { n: Nearby; onPick: (id: string | null) => void; onCollapse?: () => void }) {
+function Panel({ n, onPick, onCollapse, guest = false }: { n: Nearby; onPick: (id: string | null) => void; onCollapse?: () => void; guest?: boolean }) {
   const [filters, setFilters] = useState(false);
   const list = useRef<HTMLUListElement>(null);
   const { selectedBusId } = n;
@@ -284,6 +284,10 @@ function Panel({ n, onPick, onCollapse }: { n: Nearby; onPick: (id: string | nul
                         <Ban size={16} aria-hidden="true" />
                         Unidad llena: no admite más pasajeros.
                       </p>
+                    ) : guest ? (
+                      <Link href="/acceso/pasajero" className="psj-btn psj-btn-outline w-full">
+                        Inicia sesión para pagar
+                      </Link>
                     ) : (
                       <Link href="/pasajero/pago" className="psj-btn psj-btn-primary w-full">
                         Pagar pasaje en esta unidad
@@ -376,7 +380,8 @@ function MobileSheet({ snap, setSnap, children }: { snap: number; setSnap: (s: n
   );
 }
 
-export default function PasajeroMap() {
+/** Mapa del pasajero; con guest=true es el mismo mapa para visitantes (sin pagar ni pases). */
+export default function PasajeroMap({ guest = false }: { guest?: boolean }) {
   const n = useNearby();
   const desktop = useDesktop();
   const [open, setOpen] = useState(true);
@@ -393,7 +398,7 @@ export default function PasajeroMap() {
   const inset = desktop || typeof window === "undefined" ? 0 : snap === 0 ? PEEK : snap === 1 ? Math.round(window.innerHeight * 0.4) : 0;
 
   return (
-    <div className="psj-map-page isolate overflow-hidden">
+    <div className="psj-map-page isolate overflow-hidden" style={guest ? { height: "calc(100dvh - var(--psj-header-h))" } : undefined}>
       <div className="absolute inset-0 isolate">
         <MapView
           buses={n.buses}
@@ -412,7 +417,7 @@ export default function PasajeroMap() {
       {desktop ? (
         open ? (
           <aside aria-label="Micros cercanos" className="psj-card psj-card-shadow absolute bottom-4 left-4 top-4 z-10 flex w-[380px] max-w-[calc(100%-2rem)] flex-col overflow-hidden pt-3">
-            <Panel n={n} onPick={pick} onCollapse={() => setOpen(false)} />
+            <Panel n={n} onPick={pick} onCollapse={() => setOpen(false)} guest={guest} />
           </aside>
         ) : (
           <button
@@ -426,7 +431,7 @@ export default function PasajeroMap() {
         )
       ) : (
         <MobileSheet snap={snap} setSnap={setSnap}>
-          <Panel n={n} onPick={pick} />
+          <Panel n={n} onPick={pick} guest={guest} />
         </MobileSheet>
       )}
     </div>

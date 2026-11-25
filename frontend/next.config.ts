@@ -32,6 +32,7 @@ const securityHeaders = [
 ];
 
 const nextConfig: NextConfig = {
+  devIndicators: false,
   allowedDevOrigins: ["rutabol.scz"], // acceso por BIND9 (rutabol.scz) en desarrollo
   async headers() {
     return [{ source: "/:path*", headers: securityHeaders }];

@@ -148,7 +148,7 @@ export default function ChoferShell({ children }: { children: ReactNode }) {
           </div>
         </header>
 
-        <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-6 pb-[calc(var(--psj-nav-h)+env(safe-area-inset-bottom)+24px)] md:px-6 md:pb-8">
+        <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-6 pb-[calc(var(--psj-nav-h)+env(safe-area-inset-bottom)+24px)] md:px-6 md:pb-8 lg:max-w-[1280px] lg:px-8 lg:py-8">
           {children}
         </main>
       </div>

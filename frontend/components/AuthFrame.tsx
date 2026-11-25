@@ -1,7 +1,7 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { Inter } from "next/font/google";
-import { ArrowLeft, Bus, CircleAlert, type LucideIcon } from "lucide-react";
+import { ArrowLeft, Bus, CircleAlert, House, type LucideIcon } from "lucide-react";
 import "@/app/area.css";
 
 const inter = Inter({ variable: "--font-inter", subsets: ["latin"] });
@@ -41,6 +41,8 @@ export default function AuthFrame({
   backLabel,
   icon: Icon,
   message = "Movilidad urbana más simple, segura y conectada.",
+  wide = false,
+  home = false,
   children,
 }: {
   title: string;
@@ -50,14 +52,16 @@ export default function AuthFrame({
   icon?: LucideIcon;
   /** Mensaje institucional del panel lateral (escritorio). */
   message?: string;
-  /** Se mantiene por compatibilidad: el ancho del formulario ya es el adecuado. */
+  /** Escritorio: panel lateral fijo al 35 % y formulario de hasta 880 px (registro). */
   wide?: boolean;
+  /** Añade un botón directo a la página principal junto al de retroceso. */
+  home?: boolean;
   children: ReactNode;
 }) {
   const label = backLabel ?? (back === "/" ? "Volver al inicio" : "Cambiar perfil");
   return (
-    <div data-area="auth" className={`${inter.variable} flex min-h-dvh flex-col lg:grid lg:grid-cols-[2fr_3fr]`}>
-      <aside className="relative hidden flex-col justify-between overflow-hidden bg-(--psj-green-dark) p-10 text-white lg:flex">
+    <div data-area="auth" className={`${inter.variable} flex min-h-dvh flex-col lg:grid ${wide ? "lg:grid-cols-[35fr_65fr]" : "lg:grid-cols-[2fr_3fr]"}`}>
+      <aside className={`relative hidden flex-col justify-between overflow-hidden bg-(--psj-green-dark) p-10 text-white lg:flex ${wide ? "lg:sticky lg:top-0 lg:h-dvh" : ""}`}>
         <Link href="/" aria-label="RUTABOL-SCZ, ir al inicio"><Brand light /></Link>
         <div className="flex flex-col gap-8">
           <RoutesArt />
@@ -72,12 +76,20 @@ export default function AuthFrame({
       <div className="flex flex-1 flex-col bg-(--psj-bg)">
         <header className="flex items-center justify-between px-4 py-3 sm:px-6">
           <Link href="/" aria-label="Inicio" className="lg:invisible"><Brand /></Link>
-          <Link href={back} className="psj-btn psj-btn-ghost gap-1 px-3">
-            <ArrowLeft size={16} aria-hidden="true" />
-            {label}
-          </Link>
+          <div className="flex items-center gap-1">
+            {home && (
+              <Link href="/" className="psj-btn psj-btn-ghost gap-1 px-3">
+                <House size={16} aria-hidden="true" />
+                <span className="max-sm:sr-only">Volver al inicio</span>
+              </Link>
+            )}
+            <Link href={back} className="psj-btn psj-btn-ghost gap-1 px-3">
+              <ArrowLeft size={16} aria-hidden="true" />
+              {label}
+            </Link>
+          </div>
         </header>
-        <main className="mx-auto flex w-full max-w-[480px] flex-1 flex-col justify-center px-4 pb-[calc(32px+env(safe-area-inset-bottom))] pt-4 sm:px-6">
+        <main className={`mx-auto flex w-full max-w-[480px] flex-1 flex-col justify-center ${wide ? "lg:max-w-[880px]" : ""} px-4 pb-[calc(32px+env(safe-area-inset-bottom))] pt-4 sm:px-6`}>
           {Icon && (
             <span className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-(--psj-green-soft) text-(--psj-green)">
               <Icon size={24} aria-hidden="true" />

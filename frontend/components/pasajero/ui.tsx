@@ -9,11 +9,14 @@ export function Sheet({
   onClose,
   title,
   children,
+  wide = false,
 }: {
   open: boolean;
   onClose: () => void;
   title: string;
   children: ReactNode;
+  /** Más ancho solo en escritorio (formularios). */
+  wide?: boolean;
 }) {
   const box = useRef<HTMLDivElement>(null);
   const close = useRef(onClose);
@@ -68,7 +71,7 @@ export function Sheet({
         aria-modal="true"
         aria-label={title}
         tabIndex={-1}
-        className="psj-modal relative flex max-h-[90dvh] w-full flex-col rounded-t-2xl bg-(--psj-surface) pb-[env(safe-area-inset-bottom)] shadow-2xl outline-none md:max-w-md md:rounded-2xl"
+        className={`psj-modal relative flex max-h-[90dvh] w-full flex-col rounded-t-2xl bg-(--psj-surface) pb-[env(safe-area-inset-bottom)] shadow-2xl outline-none md:max-w-md md:rounded-2xl ${wide ? "lg:max-w-xl" : ""}`}
       >
         <div className="flex items-center justify-between gap-3 border-b border-(--psj-line) px-4 py-2">
           <h2 className="text-base font-semibold">{title}</h2>

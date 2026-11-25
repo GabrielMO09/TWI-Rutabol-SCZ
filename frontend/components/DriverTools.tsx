@@ -57,7 +57,7 @@ export function JornadaCard({ bus }: { bus: Bus }) {
   }
 
   return (
-    <section className="psj-card flex flex-col gap-3 p-4" aria-labelledby="jor">
+    <section className="psj-card flex flex-col gap-3 p-4 lg:p-6" aria-labelledby="jor">
       <div className="flex items-center justify-between gap-3">
         <div>
           <h2 id="jor" className="font-semibold">Jornada</h2>
@@ -119,7 +119,7 @@ export function OccupancyCorrection({ bus }: { bus: Bus }) {
 
   return (
     <>
-      <form onSubmit={submit} className="psj-card flex flex-col gap-3 p-4" aria-labelledby="corr">
+      <form onSubmit={submit} className="psj-card flex flex-col gap-3 p-4 lg:p-6" aria-labelledby="corr">
         <h2 id="corr" className="flex items-center gap-2 font-semibold">
           <Wrench size={18} />
           Corregir conteo de pasajeros
@@ -142,7 +142,7 @@ export function OccupancyCorrection({ bus }: { bus: Bus }) {
         <button className="psj-btn psj-btn-outline self-start">Registrar corrección</button>
       </form>
 
-      <section className="psj-card p-4" aria-labelledby="bit">
+      <section className="psj-card p-4 lg:p-6" aria-labelledby="bit">
         <h2 id="bit" className="mb-2 flex items-center gap-2 font-semibold">
           <History size={18} />
           Últimos movimientos

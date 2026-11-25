@@ -3,11 +3,14 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import Link from "next/link";
-import { Camera, UserRound } from "lucide-react";
+import { Camera, CircleCheck, GraduationCap, School, UserRound, type LucideIcon } from "lucide-react";
 import AuthFrame, { ErrorNote } from "@/components/AuthFrame";
+import { PasswordInput } from "@/components/auth/fields";
 import { useFetch } from "@/lib/api";
 import { CATEGORY_LABEL, FARES, type Category } from "@/lib/data";
 import { useApp } from "@/lib/store";
+
+const CAT_ICON: Record<Category, LucideIcon> = { escolar: School, universitario: GraduationCap, general: UserRound };
 
 type Institution = { id: string; type: "colegio" | "universidad"; name: string };
 
@@ -100,9 +103,10 @@ export default function Registro() {
       subtitle="La tarifa estudiantil se aplica cuando tu acreditación es aprobada."
       back="/acceso/pasajero"
       wide
+      home
     >
-      <form onSubmit={submit} className="flex flex-col gap-4">
-        <fieldset>
+      <form onSubmit={submit} className="flex flex-col gap-4 lg:grid lg:grid-cols-2 lg:gap-x-6 lg:gap-y-3">
+        <fieldset className="lg:col-span-2">
           <legend className="psj-label">Categoría</legend>
           <div className="grid grid-cols-3 gap-2">
             {(Object.keys(CATEGORY_LABEL) as Category[]).map((c) => (
@@ -117,12 +121,16 @@ export default function Registro() {
                   setError(null);
                 }}
                 aria-pressed={category === c}
-                className={`rounded-lg border px-2 py-2.5 text-sm font-medium ${
-                  category === c ? "border-brand bg-soft text-brand-dark" : "border-line hover:bg-soft"
+                className={`rounded-lg border px-2 py-2.5 text-sm font-medium lg:flex lg:items-center lg:gap-3 lg:px-4 lg:py-3 lg:text-left ${
+                  category === c ? "border-brand bg-soft text-brand-dark lg:border-(--psj-green) lg:ring-2 lg:ring-(--psj-green)/30" : "border-line hover:bg-soft"
                 }`}
               >
-                {CATEGORY_LABEL[c]}
-                <span className="block text-xs font-normal text-(--psj-muted-strong)">Bs {FARES[c].toFixed(2)}</span>
+                {(() => { const I = CAT_ICON[c]; return <I size={22} aria-hidden="true" className="hidden shrink-0 lg:block" />; })()}
+                <span className="lg:flex-1">
+                  {CATEGORY_LABEL[c]}
+                  <span className="block text-xs font-normal text-(--psj-muted-strong)">Bs {FARES[c].toFixed(2)}</span>
+                </span>
+                {category === c && <CircleCheck size={20} aria-hidden="true" className="hidden shrink-0 text-(--psj-green) lg:block" />}
               </button>
             ))}
           </div>
@@ -165,20 +173,14 @@ export default function Registro() {
             </div>
           </>
         )}
-        <div>
-          <label htmlFor="pw" className="psj-label">Contraseña</label>
-          <input id="pw" type="password" className="psj-input" value={password} onChange={(e) => setPassword(e.target.value)} required autoComplete="new-password" minLength={8} />
-        </div>
-        <div>
-          <label htmlFor="confirmation" className="psj-label">Repetir contraseña</label>
-          <input id="confirmation" type="password" className="psj-input" value={passwordConfirmation}
-            onChange={(e) => setPasswordConfirmation(e.target.value)} required autoComplete="new-password" minLength={8} />
-        </div>
+        <PasswordInput id="pw" desktopToggle label="Contraseña" value={password} onChange={(e) => setPassword(e.target.value)} required autoComplete="new-password" minLength={8} />
+        <PasswordInput id="confirmation" desktopToggle label="Repetir contraseña" value={passwordConfirmation}
+          onChange={(e) => setPasswordConfirmation(e.target.value)} required autoComplete="new-password" minLength={8} />
 
-        <div>
-          <span className="psj-label">Fotografía del rostro (obligatoria)</span>
-          <div className="flex items-center gap-4">
-            <div className="flex h-20 w-20 items-center justify-center overflow-hidden rounded-xl border border-(--psj-line) bg-(--psj-green-soft) text-(--psj-muted-strong)">
+        <div className="lg:col-span-2 lg:grid lg:grid-cols-[1fr_auto] lg:items-center lg:gap-x-4 lg:rounded-xl lg:border lg:border-(--psj-line) lg:bg-(--psj-surface) lg:p-4">
+          <span className="psj-label lg:col-start-1 lg:row-start-1 lg:mb-0">Fotografía del rostro (obligatoria)</span>
+          <div className="flex items-center gap-4 lg:col-start-2 lg:row-span-2 lg:row-start-1">
+            <div className="flex h-20 w-20 lg:h-16 lg:w-16 items-center justify-center overflow-hidden rounded-xl border border-(--psj-line) bg-(--psj-green-soft) text-(--psj-muted-strong)">
               {photo ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img src={photo} alt="Vista previa de tu fotografía" className="h-full w-full object-cover" />
@@ -192,18 +194,18 @@ export default function Registro() {
             </label>
             <input id="photo" type="file" accept="image/*" capture="user" className="sr-only" onChange={onPhoto} />
           </div>
-          <p className="mt-2 text-xs text-(--psj-muted-strong)">Se usa para generar tu carnet digital antifraude.</p>
+          <p className="mt-2 text-xs text-(--psj-muted-strong) lg:col-start-1 lg:row-start-2 lg:mt-1">Se usa para generar tu carnet digital antifraude.</p>
         </div>
 
-        <label className="flex items-start gap-3 text-sm">
+        <label className="flex items-start gap-3 text-sm lg:col-span-2">
           <input type="checkbox" className="mt-1 h-5 w-5 accent-[var(--g600)]" checked={acceptTerms} onChange={(e) => setAcceptTerms(e.target.checked)} required />
           <span>
             Acepto los <Link href="/terminos" className="font-medium text-(--psj-green) underline">términos de uso</Link> y la{" "}
             <Link href="/privacidad" className="font-medium text-(--psj-green) underline">política de privacidad</Link>.
           </span>
         </label>
-        <ErrorNote text={error} />
-        <button className="psj-btn psj-btn-primary" disabled={busy || (student && (!!catalog.error || !options.length))}>
+        <div className="empty:hidden lg:col-span-2"><ErrorNote text={error} /></div>
+        <button className="psj-btn psj-btn-primary lg:col-span-2 lg:w-full" disabled={busy || (student && (!!catalog.error || !options.length))}>
           {busy ? "Creando cuenta..." : "Crear cuenta"}
         </button>
       </form>

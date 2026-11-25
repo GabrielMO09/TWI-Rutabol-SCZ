@@ -49,6 +49,11 @@
   border: 1px solid var(--psj-line);
   border-radius: var(--psj-radius);
 }
+/* Acento superior de escritorio (tarjetas de trasbordo): va tras .psj-card para ganarle en la cascada. */
+@media (min-width: 1024px) {
+  .psj-accent-danger { border-top: 4px solid var(--psj-danger); }
+  .psj-accent-ok { border-top: 4px solid var(--psj-green); }
+}
 .psj-card-shadow {
   box-shadow: var(--psj-shadow);
 }

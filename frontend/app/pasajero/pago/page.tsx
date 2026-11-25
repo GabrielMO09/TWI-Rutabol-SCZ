@@ -113,10 +113,10 @@ export default function Pago() {
   const showList = !bus || changing;
 
   return (
-    <div className="mx-auto flex max-w-xl flex-col gap-4">
+    <div className="mx-auto flex max-w-xl flex-col gap-4 lg:grid lg:max-w-5xl lg:grid-cols-[minmax(0,1fr)_380px] lg:items-start lg:gap-6">
       <h1 className="sr-only">Pagar pasaje</h1>
 
-      <section aria-labelledby="unidad" className="flex flex-col gap-3">
+      <section aria-labelledby="unidad" className="flex flex-col gap-3 lg:col-start-1">
         <div className="flex items-center justify-between">
           <h2 id="unidad" className="font-semibold">Unidad</h2>
           {bus && (
@@ -134,7 +134,7 @@ export default function Pago() {
               </EmptyState>
             </div>
           ) : (
-            <ul className="flex flex-col gap-2">
+            <ul className="flex flex-col gap-2 lg:grid lg:grid-cols-2 lg:gap-3">
               {candidates.map((b) => (
                 <li key={b.id}>
                   <BusOption
@@ -157,6 +157,8 @@ export default function Pago() {
         )}
       </section>
 
+      {/* "contents" en móvil: el flujo vertical y el botón fijo quedan como estaban. */}
+      <div className="contents lg:col-start-2 lg:row-start-1 lg:sticky lg:top-20 lg:flex lg:flex-col lg:gap-4">
       <section aria-labelledby="resumen" className="psj-card flex flex-col gap-4 p-4" aria-live="polite">
         <h2 id="resumen" className="font-semibold">Resumen</h2>
         <div className="flex items-end justify-between gap-3">
@@ -233,6 +235,7 @@ export default function Pago() {
         <button type="button" className="psj-btn psj-btn-primary h-14 w-full text-base " onClick={() => void pay()} disabled={!canPay}>
           {busy ? "Procesando..." : `Pagar ${bs(fare)}`}
         </button>
+      </div>
       </div>
     </div>
   );

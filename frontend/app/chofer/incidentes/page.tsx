@@ -1,17 +1,17 @@
 "use client";
 
 import { useState } from "react";
-import { CheckCircle2, TriangleAlert } from "lucide-react";
-import { ErrorState } from "@/components/pasajero/ui";
+import { CarFront, CheckCircle2, CircleHelp, ClipboardList, Construction, TriangleAlert, Wrench, Zap, type LucideIcon } from "lucide-react";
+import { EmptyState, ErrorState } from "@/components/pasajero/ui";
 import { act } from "@/lib/api";
 import { useApp, type Incident } from "@/lib/store";
 
-const TYPES: { id: Incident["type"]; label: string }[] = [
-  { id: "accidente", label: "Accidente" },
-  { id: "falla-mecanica", label: "Falla mecánica" },
-  { id: "bloqueo", label: "Bloqueo de vía" },
-  { id: "averia", label: "Avería" },
-  { id: "otro", label: "Otro" },
+const TYPES: { id: Incident["type"]; label: string; icon: LucideIcon }[] = [
+  { id: "accidente", label: "Accidente", icon: CarFront },
+  { id: "falla-mecanica", label: "Falla mecánica", icon: Wrench },
+  { id: "bloqueo", label: "Bloqueo de vía", icon: Construction },
+  { id: "averia", label: "Avería", icon: Zap },
+  { id: "otro", label: "Otro", icon: CircleHelp },
 ];
 const STATUS = { reportado: "Reportado", "en-atencion": "En atención", resuelto: "Resuelto" } as const;
 const SEV = { alta: "Alta", media: "Media", baja: "Baja" } as const;
@@ -52,20 +52,21 @@ export default function Incidentes() {
   }
 
   return (
-    <div className="mx-auto flex max-w-3xl flex-col gap-4">
+    <div className="mx-auto flex max-w-3xl flex-col gap-4 lg:grid lg:max-w-[1280px] lg:grid-cols-2 lg:items-start lg:gap-6">
       <h1 className="sr-only">Reportar incidente</h1>
-      <form onSubmit={send} className="psj-card flex flex-col gap-4 p-4">
+      <form onSubmit={send} className="psj-card flex flex-col gap-4 p-4 lg:p-6">
         <fieldset>
           <legend className="psj-label">Tipo de incidente</legend>
-          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:gap-3">
             {TYPES.map((t) => (
               <button
                 key={t.id}
                 type="button"
                 aria-pressed={type === t.id}
                 onClick={() => setType(t.id)}
-                className="psj-choice"
+                className="psj-choice lg:flex lg:min-h-24! lg:flex-col lg:items-center lg:justify-center lg:gap-2"
               >
+                <t.icon size={24} aria-hidden="true" className="hidden lg:block" />
                 {t.label}
               </button>
             ))}
@@ -95,7 +96,14 @@ export default function Incidentes() {
       <section aria-labelledby="inc-h">
         <h2 id="inc-h" className="mb-2 font-semibold">Incidentes de mi unidad</h2>
         {mine.length === 0 ? (
-          <p className="text-sm text-(--psj-muted-strong)">No hay incidentes registrados.</p>
+          <>
+            <p className="text-sm text-(--psj-muted-strong) lg:hidden">No hay incidentes registrados.</p>
+            <div className="psj-card hidden lg:block">
+              <EmptyState icon={ClipboardList} title="No hay incidentes registrados">
+                Los reportes de tu unidad aparecerán aquí con su estado y gravedad.
+              </EmptyState>
+            </div>
+          </>
         ) : (
           <ul className="flex flex-col gap-2">
             {mine.map((i) => (

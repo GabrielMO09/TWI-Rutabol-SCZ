@@ -29,9 +29,33 @@ export default function PanelChofer() {
   );
 
   return (
-    <div className="mx-auto flex max-w-3xl flex-col gap-4">
+    <div className="mx-auto flex max-w-3xl flex-col gap-4 lg:max-w-[1280px] lg:gap-6">
       <h1 className="sr-only">Panel del chofer</h1>
       <JornadaCard bus={bus} />
+      <dl className="hidden gap-6 lg:grid lg:grid-cols-3">
+        <div className="psj-card p-6">
+          <dt className="text-sm text-(--psj-muted-strong)">Unidad asignada</dt>
+          <dd className="mt-2 text-3xl font-bold">Línea {bus.line}</dd>
+          <dd className="text-sm text-(--psj-muted-strong)">Interno {bus.internal}{bus.plate ? ` · ${bus.plate}` : ""}</dd>
+        </div>
+        <div className="psj-card p-6">
+          <dt className="flex items-center justify-between text-sm text-(--psj-muted-strong)">
+            Pasajeros a bordo
+            <StatusPill tone={full ? "danger" : state === "casi-lleno" ? "warn" : "success"}>{OCC_LABEL[state]}</StatusPill>
+          </dt>
+          <dd className="mt-2 text-3xl font-bold tabular-nums">
+            {bus.occupancy}<span className="text-lg font-semibold text-(--psj-muted-strong)"> / {bus.max}</span>
+          </dd>
+          <dd className="mt-3 h-2.5 overflow-hidden rounded-full bg-(--psj-line)" role="presentation">
+            <div className={`h-full ${BAR[state]}`} style={{ width: `${(bus.occupancy / bus.max) * 100}%` }} />
+          </dd>
+        </div>
+        <div className="psj-card p-6">
+          <dt className="text-sm text-(--psj-muted-strong)">Espacios disponibles</dt>
+          <dd className="mt-2 text-3xl font-bold tabular-nums">{Math.max(0, bus.max - bus.occupancy)}</dd>
+          <dd className="text-sm text-(--psj-muted-strong)">de {bus.max} plazas</dd>
+        </div>
+      </dl>
       {alerts.map((a) => (
         <div key={a.id} className="psj-card flex items-center gap-3 border-(--psj-danger) bg-(--psj-danger-soft) p-4 text-(--psj-danger)" role="alert">
           <Siren size={24} className="shrink-0" />
@@ -61,7 +85,7 @@ export default function PanelChofer() {
         </div>
       )}
 
-      <section className="psj-card p-6 text-center">
+      <section className="psj-card p-6 text-center lg:hidden">
         <p className="text-sm text-(--psj-muted-strong)">Pasajeros a bordo</p>
         <p className="my-2 text-7xl font-bold tabular-nums">
           {bus.occupancy}
@@ -80,7 +104,10 @@ export default function PanelChofer() {
         </div>
       )}
 
-      <div className="grid gap-3 sm:grid-cols-2">
+      {/* "contents" en móvil: el orden vertical original no cambia. */}
+      <div className="contents lg:grid lg:grid-cols-2 lg:items-stretch lg:gap-6">
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-1 lg:content-start lg:gap-4 lg:rounded-xl lg:border lg:border-(--psj-line) lg:bg-(--psj-surface) lg:p-6">
+        <h2 className="hidden font-semibold lg:block">Control de pasajeros</h2>
         <Link href="/chofer/validacion" className="psj-btn psj-btn-primary psj-btn-lg">
           <ScanFace size={22} />
           Validar pasajeros ({pending})
@@ -95,7 +122,7 @@ export default function PanelChofer() {
         </button>
       </div>
 
-      <section className="psj-card p-4">
+      <section className="psj-card p-4 lg:p-6">
         <h2 className="font-semibold">Aforo máximo de la unidad</h2>
         <p className="mb-3 text-sm text-(--psj-muted-strong)">Configurable entre 18 y 25 pasajeros.</p>
         <div className="flex items-center justify-center gap-6">
@@ -119,7 +146,10 @@ export default function PanelChofer() {
         </div>
         {msg && <p className="mt-3 text-center text-sm text-(--psj-danger)">{msg}</p>}
       </section>
-      <OccupancyCorrection bus={bus} />
+      </div>
+      <div className="contents lg:grid lg:grid-cols-2 lg:items-start lg:gap-6">
+        <OccupancyCorrection bus={bus} />
+      </div>
     </div>
   );
 }

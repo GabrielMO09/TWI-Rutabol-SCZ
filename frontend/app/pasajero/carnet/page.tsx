@@ -5,7 +5,8 @@ import QRCode from "qrcode";
 import { BadgeCheck, CircleAlert, RefreshCw, ShieldCheck, UserRound } from "lucide-react";
 import { ErrorState, Skeleton, StatusPill } from "@/components/pasajero/ui";
 import { api } from "@/lib/api";
-import { CATEGORY_LABEL } from "@/lib/data";
+import { bs } from "@/components/pasajero/format";
+import { CATEGORY_LABEL, FARES } from "@/lib/data";
 import { useApp } from "@/lib/store";
 
 interface Credential {
@@ -55,8 +56,12 @@ export default function Carnet() {
   const acc = profile.accreditation;
 
   return (
-    <div className="mx-auto flex max-w-sm flex-col gap-3">
+    <div className="mx-auto flex max-w-sm flex-col gap-3 lg:grid lg:max-w-[1200px] lg:grid-cols-[2fr_3fr] lg:items-start lg:gap-x-6 lg:gap-y-5">
       <h1 className="sr-only">Carnet digital</h1>
+      <div className="hidden lg:col-span-2 lg:block">
+        <p className="text-2xl font-semibold">Tu credencial estudiantil</p>
+        <p className="text-sm text-(--psj-muted-strong)">Identifícate y accede a tu tarifa preferencial</p>
+      </div>
       <article className="psj-card psj-card-shadow overflow-hidden">
         <div className="flex items-center justify-between bg-(--psj-green-dark) px-4 py-3 text-white">
           <span className="text-sm font-semibold tracking-wide">RUTABOL-SCZ</span>
@@ -113,6 +118,43 @@ export default function Carnet() {
           </p>
         </div>
       </article>
+
+      <aside aria-label="Información del carnet" className="hidden flex-col gap-4 lg:flex">
+        <section className="psj-card p-5">
+          <h2 className="mb-4 text-lg font-semibold">Información de acreditación</h2>
+          <dl className="grid grid-cols-[auto_1fr] gap-x-6 gap-y-3 text-sm">
+            <dt className="text-(--psj-muted-strong)">Estado</dt>
+            <dd className="text-right">
+              <StatusPill tone={student && !vigente ? "warn" : "success"}>
+                {student ? (vigente ? "Acreditación vigente" : "Acreditación no vigente") : "Cuenta general"}
+              </StatusPill>
+            </dd>
+            <dt className="text-(--psj-muted-strong)">Institución</dt>
+            <dd className="text-right font-medium">{acc?.institution || "-"}</dd>
+            <dt className="text-(--psj-muted-strong)">Beneficio</dt>
+            <dd className="text-right font-medium">{vigente && student ? "Tarifa estudiantil vigente" : "Sin beneficio estudiantil"}</dd>
+            <dt className="text-(--psj-muted-strong)">Tarifa preferencial</dt>
+            <dd className="text-right font-medium tabular-nums">
+              {bs(FARES[profile.fareCategory ?? "general"])} · {CATEGORY_LABEL[profile.fareCategory ?? "general"].toLowerCase()}
+            </dd>
+            {acc?.validUntil && vigente && (
+              <>
+                <dt className="text-(--psj-muted-strong)">Válido hasta</dt>
+                <dd className="text-right font-medium">{new Date(acc.validUntil).toLocaleDateString("es-BO")}</dd>
+              </>
+            )}
+          </dl>
+        </section>
+        <section className="psj-card p-5">
+          <h2 className="mb-4 text-lg font-semibold">¿Cómo utilizar tu carnet?</h2>
+          <ol className="flex list-decimal flex-col gap-3 pl-5 text-sm text-(--psj-muted-strong)">
+            <li>Paga tu pasaje desde la sección Pagar pasaje.</li>
+            <li>Al abordar, presenta este código QR al conductor.</li>
+            <li>El conductor lo escanea y valida tu identidad y tu beneficio.</li>
+            <li>El código vence en 60 s y se renueva solo; si no carga, genera uno nuevo.</li>
+          </ol>
+        </section>
+      </aside>
     </div>
   );
 }

@@ -4,24 +4,27 @@ import { useId, useState, type ComponentProps } from "react";
 import { Eye, EyeOff, LoaderCircle, LogIn, type LucideIcon } from "lucide-react";
 
 /** Campo de contraseña con botón para mostrar u ocultar; conserva autocompletado y gestores de contraseñas. */
-export function PasswordInput({ label = "Contraseña", error, ...props }: Omit<ComponentProps<"input">, "type"> & { label?: string; error?: string | null }) {
+export function PasswordInput({ label = "Contraseña", error, desktopToggle = false, ...props }: Omit<ComponentProps<"input">, "type"> & { label?: string; error?: string | null; /** Muestra el botón de ver/ocultar solo desde 1024 px. */ desktopToggle?: boolean }) {
   const [show, setShow] = useState(false);
   const auto = useId();
   const id = props.id ?? auto;
+  const toggle = (
+    <button
+      type="button"
+      onClick={() => setShow((s) => !s)}
+      aria-label={show ? "Ocultar contraseña" : "Mostrar contraseña"}
+      aria-pressed={show}
+      className={`psj-icon-btn h-full ${desktopToggle ? "" : "absolute right-0 top-0"}`}
+    >
+      {show ? <EyeOff size={18} aria-hidden="true" /> : <Eye size={18} aria-hidden="true" />}
+    </button>
+  );
   return (
     <div>
       <label htmlFor={id} className="psj-label">{label}</label>
       <div className="relative">
-        <input {...props} id={id} type={show ? "text" : "password"} className="psj-input pr-12" aria-invalid={!!error} aria-describedby={error ? `${id}-err` : undefined} />
-        <button
-          type="button"
-          onClick={() => setShow((s) => !s)}
-          aria-label={show ? "Ocultar contraseña" : "Mostrar contraseña"}
-          aria-pressed={show}
-          className="psj-icon-btn absolute right-0 top-0 h-full"
-        >
-          {show ? <EyeOff size={18} aria-hidden="true" /> : <Eye size={18} aria-hidden="true" />}
-        </button>
+        <input {...props} id={id} type={show ? "text" : "password"} className={`psj-input ${desktopToggle ? "lg:pr-12!" : "pr-12"}`} aria-invalid={!!error} aria-describedby={error ? `${id}-err` : undefined} />
+        {desktopToggle ? <span className="absolute right-0 top-0 hidden h-full lg:block">{toggle}</span> : toggle}
       </div>
       {error && <p id={`${id}-err`} className="mt-1 text-sm text-(--psj-danger)">{error}</p>}
     </div>
