@@ -1,13 +1,19 @@
 import type { NextConfig } from "next";
 
 const isDev = process.env.NODE_ENV !== "production";
-const apiOrigin = (() => {
-  try {
-    return new URL(process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001/api").origin;
-  } catch {
-    return "http://localhost:3001";
-  }
-})();
+// Con NEXT_PUBLIC_API_URL relativo ("/api", producción en Vercel) el navegador solo habla con 'self'.
+const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001/api";
+const apiOrigin = apiUrl.startsWith("/")
+  ? "'self'"
+  : (() => {
+      try {
+        return new URL(apiUrl).origin;
+      } catch {
+        return "http://localhost:3001";
+      }
+    })();
+// Backend real al que Vercel reenvía /api/* (misma origin => la cookie SameSite=Lax viaja).
+const backendUrl = process.env.BACKEND_URL?.replace(/\/$/, "");
 
 // shortcut: script-src y style-src con unsafe-inline porque Next/Leaflet inyectan inline; endurecer con nonces cuando se pruebe en navegador.
 const csp = [
@@ -34,6 +40,9 @@ const securityHeaders = [
 const nextConfig: NextConfig = {
   devIndicators: false,
   allowedDevOrigins: ["rutabol.scz"], // acceso por BIND9 (rutabol.scz) en desarrollo
+  async rewrites() {
+    return backendUrl ? [{ source: "/api/:path*", destination: `${backendUrl}/api/:path*` }] : [];
+  },
   async headers() {
     return [{ source: "/:path*", headers: securityHeaders }];
   },
