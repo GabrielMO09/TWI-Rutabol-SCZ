@@ -24,7 +24,8 @@ services:
       DB_TRANSPORTE_USER: ${DB_TRANSPORTE_USER:-transporte_app}
       DB_TRANSPORTE_PASSWORD: ${DB_TRANSPORTE_PASSWORD:-transporte_dev_pass}
     ports:
-      - "${DB_PORT:-5434}:5432"
+      # Solo local: sin 127.0.0.1 Postgres quedaria abierto a toda la red con contrasenas de desarrollo.
+      - "127.0.0.1:${DB_PORT:-5434}:5432"
     volumes:
       - pgdata:/var/lib/postgresql
       # Solo se ejecuta en el PRIMER arranque (volumen vacio): crea las 3 bases y carga bd/<base>/01_esquema.sql + 02_datos.sql.
@@ -72,7 +73,7 @@ services:
       DB_SSL: "${DB_SSL:-false}"
       FRONTEND_URL: ${FRONTEND_URL:-http://localhost:3000}
       TRUST_PROXY: "${TRUST_PROXY:-}"
-      CREDENTIAL_SECRET: ${CREDENTIAL_SECRET:-credential_dev_only}
+      CREDENTIAL_SECRET: ${CREDENTIAL_SECRET:?Define CREDENTIAL_SECRET en .env}
     ports:
       - "${BACKEND_PORT:-3001}:3001"
     healthcheck:
