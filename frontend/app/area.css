@@ -1,404 +1,1148 @@
-/*
- * Sistema de diseño de las áreas del pasajero/estudiante y del chofer.
- * Todo vive bajo [data-area="pasajero"|"chofer"] y clases psj-*: no afecta a Control ni al mapa público.
- */
+
+/* =========================================================
+   RUTABOL-SCZ
+   SISTEMA DE DISEÑO DE ÁREAS INTERNAS
+
+   Pasajero: Verde esmeralda
+   Conductor: Azul operativo
+   Centro de Control: Violeta administrativo
+========================================================= */
+
+/* =========================================================
+   1. VARIABLES COMPARTIDAS
+========================================================= */
+
+:root {
+  --rutabol-header-h: 64px;
+  --rutabol-nav-h: 72px;
+}
+
 [data-area] {
-  /* Paleta */
-  --psj-green-dark: #103e2c;
-  --psj-green: #16874c;
-  --psj-green-soft: #eaf5ee;
-  --psj-bg: #f6f8f7;
+  /* Identidad visual predeterminada */
+
+  --psj-brand: #047857;
+  --psj-brand-dark: #064e3b;
+  --psj-brand-deep: #022c22;
+  --psj-brand-light: #10b981;
+  --psj-brand-soft: #ecfdf5;
+  --psj-brand-border: #a7f3d0;
+  --psj-brand-rgb: 4, 120, 87;
+
+  /* Compatibilidad con las clases originales */
+
+  --psj-green: var(--psj-brand);
+  --psj-green-dark: var(--psj-brand-dark);
+  --psj-green-soft: var(--psj-brand-soft);
+
+  /* Superficies */
+
+  --psj-bg: #f8fafc;
   --psj-surface: #ffffff;
-  --psj-ink: #172b22;
+  --psj-ink: #0f172a;
   --psj-muted: #64748b;
-  --psj-muted-strong: #475569; /* texto pequeño sobre --psj-bg: cumple 4.5:1 */
-  --psj-line: #e2e8e4;
+  --psj-muted-strong: #475569;
+  --psj-line: #e2e8f0;
+
+  /* Estados semánticos */
+
+  --psj-success: #047857;
+  --psj-success-dark: #065f46;
+  --psj-success-soft: #ecfdf5;
+  --psj-success-border: #a7f3d0;
+
   --psj-warn: #d97706;
-  --psj-warn-soft: #fef3e2;
+  --psj-warn-dark: #92400e;
+  --psj-warn-soft: #fffbeb;
+  --psj-warn-border: #fde68a;
+
   --psj-danger: #dc2626;
-  --psj-danger-soft: #fdeceb;
-  /* Espaciado 4/8/12/16/24/32 */
+  --psj-danger-dark: #991b1b;
+  --psj-danger-soft: #fef2f2;
+  --psj-danger-border: #fecaca;
+
+  --psj-info: #2563eb;
+  --psj-info-soft: #eff6ff;
+
+  /* Espaciado */
+
   --psj-s1: 4px;
   --psj-s2: 8px;
   --psj-s3: 12px;
   --psj-s4: 16px;
   --psj-s6: 24px;
   --psj-s8: 32px;
-  /* Forma y movimiento */
-  --psj-radius: 12px;
-  --psj-radius-sm: 8px;
-  --psj-shadow: 0 1px 2px rgb(16 62 44 / 0.06), 0 4px 14px rgb(16 62 44 / 0.08);
-  --psj-ease: 200ms ease;
-  /* Medidas del marco */
-  --psj-header-h: 56px;
-  --psj-nav-h: 64px;
 
-  font-family: var(--font-inter), system-ui, sans-serif;
+  /* Bordes */
+
+  --psj-radius: 20px;
+  --psj-radius-sm: 12px;
+  --psj-radius-lg: 28px;
+
+  /* Sombras */
+
+  --psj-shadow-sm:
+    0 1px 3px rgb(15 23 42 / 0.05);
+
+  --psj-shadow:
+    0 2px 5px rgb(15 23 42 / 0.04),
+    0 8px 24px rgb(15 23 42 / 0.07);
+
+  --psj-shadow-lg:
+    0 12px 32px rgb(15 23 42 / 0.12),
+    0 24px 64px rgb(15 23 42 / 0.08);
+
+  /* Animaciones */
+
+  --psj-ease: 200ms ease;
+  --psj-ease-slow: 300ms ease;
+
+  /* Dimensiones del marco */
+
+  --psj-header-h: var(--rutabol-header-h);
+  --psj-nav-h: var(--rutabol-nav-h);
+
+  font-family:
+    var(--font-inter),
+    system-ui,
+    sans-serif;
+
   color: var(--psj-ink);
   background: var(--psj-bg);
+
+  min-width: 0;
+  min-height: 100dvh;
 }
+
+/* =========================================================
+   2. IDENTIDAD VISUAL DEL PASAJERO
+========================================================= */
+
+[data-area="pasajero"] {
+  --psj-brand: #047857;
+  --psj-brand-dark: #064e3b;
+  --psj-brand-deep: #022c22;
+  --psj-brand-light: #10b981;
+  --psj-brand-soft: #ecfdf5;
+  --psj-brand-border: #a7f3d0;
+  --psj-brand-rgb: 4, 120, 87;
+}
+
+/* =========================================================
+   3. IDENTIDAD VISUAL DEL CONDUCTOR
+========================================================= */
+
+[data-area="chofer"] {
+  --psj-brand: #1d4ed8;
+  --psj-brand-dark: #1e3a8a;
+  --psj-brand-deep: #172554;
+  --psj-brand-light: #3b82f6;
+  --psj-brand-soft: #eff6ff;
+  --psj-brand-border: #bfdbfe;
+  --psj-brand-rgb: 29, 78, 216;
+}
+
+/* =========================================================
+   4. IDENTIDAD VISUAL DEL CENTRO DE CONTROL
+========================================================= */
+
+[data-area="control"] {
+  --psj-brand: #6d28d9;
+  --psj-brand-dark: #4c1d95;
+  --psj-brand-deep: #2e1065;
+  --psj-brand-light: #8b5cf6;
+  --psj-brand-soft: #f5f3ff;
+  --psj-brand-border: #ddd6fe;
+  --psj-brand-rgb: 109, 40, 217;
+}
+
+/* =========================================================
+   5. ACCESIBILIDAD
+========================================================= */
 
 [data-area] :focus-visible {
-  outline: 2px solid var(--psj-green);
-  outline-offset: 2px;
+  outline: 2px solid var(--psj-brand);
+  outline-offset: 3px;
 }
 
-/* ---- Primitivos ---- */
+[data-area] button:not(:disabled),
+[data-area] select:not(:disabled) {
+  cursor: pointer;
+}
+
+[data-area] button:disabled,
+[data-area] select:disabled {
+  cursor: not-allowed;
+}
+
+[data-area] ::selection {
+  background: var(--psj-brand-border);
+  color: var(--psj-brand-deep);
+}
+
+/* =========================================================
+   6. TARJETAS Y CONTENEDORES
+========================================================= */
+
 .psj-card {
+  min-width: 0;
   background: var(--psj-surface);
   border: 1px solid var(--psj-line);
   border-radius: var(--psj-radius);
+  box-shadow: var(--psj-shadow-sm);
 }
-/* Acento superior de escritorio (tarjetas de trasbordo): va tras .psj-card para ganarle en la cascada. */
-@media (min-width: 1024px) {
-  .psj-accent-danger { border-top: 4px solid var(--psj-danger); }
-  .psj-accent-ok { border-top: 4px solid var(--psj-green); }
-}
+
 .psj-card-shadow {
   box-shadow: var(--psj-shadow);
 }
+
+@media (min-width: 1024px) {
+  .psj-accent-danger {
+    border-top: 4px solid var(--psj-danger);
+  }
+
+  .psj-accent-ok {
+    border-top: 4px solid var(--psj-success);
+  }
+}
+
+/* =========================================================
+   7. SISTEMA DE BOTONES
+========================================================= */
+
 .psj-btn {
   display: inline-flex;
-  min-height: 44px;
+
+  min-width: 0;
+  min-height: 46px;
+  max-width: 100%;
+
   align-items: center;
   justify-content: center;
+
   gap: var(--psj-s2);
+
   border-radius: var(--psj-radius-sm);
-  padding: 0 var(--psj-s4);
+
+  padding: 10px 16px;
+
   font-size: 14px;
   font-weight: 600;
-  line-height: 1;
-  white-space: nowrap;
-  transition: background-color var(--psj-ease), border-color var(--psj-ease), color var(--psj-ease), transform 150ms ease;
+  line-height: 1.35;
+
+  text-align: center;
+
+  transition:
+    background-color var(--psj-ease),
+    border-color var(--psj-ease),
+    color var(--psj-ease),
+    box-shadow var(--psj-ease),
+    transform 150ms ease;
 }
+
+.psj-btn svg {
+  flex-shrink: 0;
+}
+
 .psj-btn:active:not(:disabled) {
   transform: scale(0.98);
 }
-.psj-btn:disabled {
+
+.psj-btn:disabled,
+.psj-btn[aria-disabled="true"] {
   cursor: not-allowed;
   opacity: 0.5;
 }
+
+/* Botón principal */
+
 .psj-btn-primary {
-  background: var(--psj-green);
-  color: #fff;
+  border: 1px solid transparent;
+  background: var(--psj-brand);
+  color: #ffffff;
+
+  box-shadow:
+    0 2px 5px rgba(var(--psj-brand-rgb), 0.15);
 }
+
 .psj-btn-primary:hover:not(:disabled) {
-  background: var(--psj-green-dark);
+  background: var(--psj-brand-dark);
+
+  box-shadow:
+    0 5px 15px rgba(var(--psj-brand-rgb), 0.2);
 }
+
+/* Botón secundario */
+
 .psj-btn-outline {
   background: var(--psj-surface);
   border: 1px solid var(--psj-line);
-  color: var(--psj-green-dark);
+  color: var(--psj-brand-dark);
 }
+
 .psj-btn-outline:hover:not(:disabled) {
-  background: var(--psj-green-soft);
+  border-color: var(--psj-brand-border);
+  background: var(--psj-brand-soft);
+  color: var(--psj-brand-dark);
 }
+
+/* Botón transparente */
+
 .psj-btn-ghost {
   color: var(--psj-muted-strong);
+  background: transparent;
 }
+
 .psj-btn-ghost:hover:not(:disabled) {
-  background: var(--psj-green-soft);
-  color: var(--psj-green-dark);
+  background: var(--psj-brand-soft);
+  color: var(--psj-brand-dark);
 }
+
+/* Botón de mayor tamaño */
+
 .psj-btn-lg {
   min-height: 56px;
-  border-radius: var(--psj-radius);
-  font-size: 16px;
+  border-radius: 16px;
+  padding: 12px 18px;
+
+  font-size: 15px;
+  font-weight: 700;
 }
+
+/* Botón de peligro */
+
 .psj-btn-danger {
+  border: 1px solid transparent;
   background: var(--psj-danger);
-  color: #fff;
+  color: #ffffff;
 }
+
 .psj-btn-danger:hover:not(:disabled) {
   background: #b91c1c;
 }
+
+/* Botón de peligro secundario */
+
 .psj-btn-danger-outline {
   background: var(--psj-surface);
-  border: 1px solid var(--psj-danger);
+  border: 1px solid var(--psj-danger-border);
   color: var(--psj-danger);
 }
+
 .psj-btn-danger-outline:hover:not(:disabled) {
+  border-color: var(--psj-danger);
   background: var(--psj-danger-soft);
 }
-/* Opción seleccionable (tipo de incidente, categoría de tarifa...). */
+
+/* =========================================================
+   8. OPCIONES SELECCIONABLES
+========================================================= */
+
 .psj-choice {
+  min-width: 0;
   min-height: 56px;
+
   border: 1px solid var(--psj-line);
-  border-radius: var(--psj-radius-sm);
+  border-radius: 14px;
+
   background: var(--psj-surface);
+
   padding: var(--psj-s3);
+
   font-size: 14px;
   font-weight: 600;
-  transition: background-color var(--psj-ease), border-color var(--psj-ease), color var(--psj-ease);
+
+  transition:
+    background-color var(--psj-ease),
+    border-color var(--psj-ease),
+    color var(--psj-ease),
+    box-shadow var(--psj-ease);
 }
-.psj-choice:hover {
-  background: var(--psj-green-soft);
+
+.psj-choice:hover:not(:disabled) {
+  background: var(--psj-brand-soft);
+  border-color: var(--psj-brand-border);
 }
+
 .psj-choice[aria-pressed="true"] {
-  border-color: var(--psj-green);
-  background: var(--psj-green-soft);
-  color: var(--psj-green-dark);
+  border-color: var(--psj-brand);
+
+  background: var(--psj-brand-soft);
+
+  color: var(--psj-brand-dark);
+
+  box-shadow:
+    0 0 0 1px var(--psj-brand);
 }
+
+.psj-choice:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* =========================================================
+   9. BOTONES CON ICONOS
+========================================================= */
+
 .psj-icon-btn {
   display: inline-flex;
+
   width: 44px;
   height: 44px;
+
+  flex-shrink: 0;
+
   align-items: center;
   justify-content: center;
+
   border-radius: var(--psj-radius-sm);
+
   color: var(--psj-muted-strong);
-  transition: background-color var(--psj-ease), color var(--psj-ease);
+
+  transition:
+    background-color var(--psj-ease),
+    color var(--psj-ease),
+    transform 150ms ease;
 }
-.psj-icon-btn:hover {
-  background: var(--psj-green-soft);
-  color: var(--psj-green-dark);
+
+.psj-icon-btn:hover:not(:disabled) {
+  background: var(--psj-brand-soft);
+  color: var(--psj-brand-dark);
 }
+
+.psj-icon-btn:active:not(:disabled) {
+  transform: scale(0.95);
+}
+
+.psj-icon-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* =========================================================
+   10. FORMULARIOS Y CAMPOS DE ENTRADA
+========================================================= */
+
 .psj-input {
-  height: 44px;
   width: 100%;
+  min-width: 0;
+  height: 48px;
+
   border-radius: var(--psj-radius-sm);
   border: 1px solid var(--psj-line);
+
   background: var(--psj-surface);
-  padding: 0 var(--psj-s3);
+  color: var(--psj-ink);
+
+  padding: 0 14px;
+
+  font-family: inherit;
   font-size: 14px;
-  transition: border-color var(--psj-ease), box-shadow var(--psj-ease);
+  line-height: 1.5;
+
+  transition:
+    border-color var(--psj-ease),
+    box-shadow var(--psj-ease),
+    background-color var(--psj-ease);
 }
+
+.psj-input::placeholder {
+  color: #94a3b8;
+  opacity: 1;
+}
+
+.psj-input:hover:not(:disabled) {
+  border-color: #cbd5e1;
+}
+
+.psj-input:focus {
+  border-color: var(--psj-brand);
+
+  box-shadow:
+    0 0 0 4px rgba(var(--psj-brand-rgb), 0.1);
+
+  outline: none;
+}
+
+.psj-input:disabled {
+  background: #f1f5f9;
+  color: var(--psj-muted);
+  cursor: not-allowed;
+}
+
+.psj-input[readonly] {
+  background: #f8fafc;
+  color: var(--psj-muted-strong);
+}
+
+.psj-input[aria-invalid="true"] {
+  border-color: var(--psj-danger);
+}
+
+.psj-input[aria-invalid="true"]:focus {
+  box-shadow:
+    0 0 0 4px rgb(220 38 38 / 0.1);
+}
+
+/* Campo con icono */
+
 .psj-input-icon {
   padding-left: 36px;
 }
+
+/* Área de texto */
+
 .psj-textarea {
   height: auto;
-  min-height: 96px;
-  padding-top: var(--psj-s3);
-  padding-bottom: var(--psj-s3);
+  min-height: 110px;
+
+  padding-top: 12px;
+  padding-bottom: 12px;
+
+  resize: vertical;
 }
-.psj-input:focus {
-  border-color: var(--psj-green);
-  box-shadow: 0 0 0 3px rgb(22 135 76 / 0.15);
-  outline: none;
-}
+
+/* Etiquetas de formulario */
+
 .psj-label {
   display: block;
-  margin-bottom: var(--psj-s1);
-  font-size: 12px;
+
+  margin-bottom: 6px;
+
+  font-size: 13px;
   font-weight: 600;
+
   color: var(--psj-muted-strong);
 }
+
+/* Casillas y opciones */
+
+[data-area] input[type="checkbox"],
+[data-area] input[type="radio"] {
+  accent-color: var(--psj-brand);
+}
+
+/* Evitar ampliación automática en Safari móvil */
+
+@media (max-width: 767px) {
+  .psj-input {
+    font-size: 16px;
+  }
+}
+
+/* =========================================================
+   11. INDICADORES DE ESTADO
+========================================================= */
+
 .psj-pill {
   display: inline-flex;
+
+  max-width: 100%;
+
   align-items: center;
-  gap: 4px;
+  gap: 5px;
+
+  border: 1px solid transparent;
   border-radius: 999px;
-  padding: 2px 10px;
-  font-size: 12px;
+
+  padding: 3px 10px;
+
+  font-size: 11px;
   font-weight: 600;
-  line-height: 20px;
+  line-height: 18px;
+
+  overflow-wrap: anywhere;
 }
-.psj-pill-success { background: var(--psj-green-soft); color: var(--psj-green-dark); }
-.psj-pill-warn { background: var(--psj-warn-soft); color: #92400e; }
-.psj-pill-danger { background: var(--psj-danger-soft); color: #991b1b; }
-.psj-pill-neutral { background: #eef2f0; color: var(--psj-muted-strong); }
+
+/* Estado exitoso: siempre verde */
+
+.psj-pill-success {
+  border-color: var(--psj-success-border);
+
+  background: var(--psj-success-soft);
+  color: var(--psj-success-dark);
+}
+
+/* Estado de advertencia */
+
+.psj-pill-warn {
+  border-color: var(--psj-warn-border);
+
+  background: var(--psj-warn-soft);
+  color: var(--psj-warn-dark);
+}
+
+/* Estado crítico */
+
+.psj-pill-danger {
+  border-color: var(--psj-danger-border);
+
+  background: var(--psj-danger-soft);
+  color: var(--psj-danger-dark);
+}
+
+/* Estado neutral */
+
+.psj-pill-neutral {
+  border-color: #e2e8f0;
+
+  background: #f1f5f9;
+  color: var(--psj-muted-strong);
+}
+
+/* =========================================================
+   12. INDICADORES DE CARGA
+========================================================= */
+
 .psj-skeleton {
   border-radius: var(--psj-radius-sm);
-  background: linear-gradient(90deg, #eef2f0 25%, #f7f9f8 50%, #eef2f0 75%);
+
+  background: linear-gradient(
+    90deg,
+    #e2e8f0 25%,
+    #f8fafc 50%,
+    #e2e8f0 75%
+  );
+
   background-size: 200% 100%;
+
   animation: psj-shimmer 1.4s linear infinite;
 }
 
-/* ---- Marco: barra lateral y navegación inferior ---- */
-.psj-side {
-  width: 72px;
-  transition: width var(--psj-ease);
+@keyframes psj-shimmer {
+  from {
+    background-position: 200% 0;
+  }
+
+  to {
+    background-position: -200% 0;
+  }
 }
+
+/* =========================================================
+   13. BARRA LATERAL COMPATIBLE CON COMPONENTES ANTERIORES
+========================================================= */
+
+.psj-side {
+  width: 76px;
+  transition: width var(--psj-ease-slow);
+}
+
 .psj-side .psj-side-label {
   display: none;
 }
+
 @media (min-width: 1024px) {
   .psj-side:not([data-collapsed="true"]) {
-    width: 248px;
+    width: 254px;
   }
-  .psj-side:not([data-collapsed="true"]) .psj-side-label {
+
+  .psj-side:not([data-collapsed="true"])
+  .psj-side-label {
     display: inline;
   }
 }
+
 .psj-side-link {
   display: flex;
+
+  min-width: 0;
   min-height: 44px;
+
   align-items: center;
+
   gap: var(--psj-s3);
+
   border-radius: var(--psj-radius-sm);
-  padding: 0 var(--psj-s3);
+
+  padding: 10px 12px;
+
   font-size: 14px;
   font-weight: 500;
+
   color: var(--psj-muted-strong);
-  transition: background-color var(--psj-ease), color var(--psj-ease);
-}
-.psj-side-link:hover {
-  background: var(--psj-green-soft);
-  color: var(--psj-green-dark);
-}
-.psj-side-link[aria-current="page"] {
-  background: var(--psj-green-soft);
-  color: var(--psj-green-dark);
-  font-weight: 600;
-}
-.psj-bottom-nav {
-  height: calc(var(--psj-nav-h) + env(safe-area-inset-bottom));
-  padding-bottom: env(safe-area-inset-bottom);
-  padding-left: env(safe-area-inset-left);
-  padding-right: env(safe-area-inset-right);
-}
-.psj-bottom-link {
-  display: flex;
-  min-width: 44px;
-  min-height: 44px;
-  flex: 1;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 2px;
-  font-size: 11px;
-  font-weight: 500;
-  color: var(--psj-muted-strong);
-}
-.psj-bottom-link[aria-current="page"] {
-  color: var(--psj-green);
-  font-weight: 600;
-}
-.psj-pay-fab {
-  display: flex;
-  width: 56px;
-  height: 56px;
-  align-items: center;
-  justify-content: center;
-  border-radius: 999px;
-  background: var(--psj-green);
-  color: #fff;
-  margin-top: -22px;
-  border: 4px solid var(--psj-bg);
-  box-shadow: var(--psj-shadow);
-  transition: background-color var(--psj-ease), transform 150ms ease;
-}
-.psj-pay-fab:hover {
-  background: var(--psj-green-dark);
-}
-.psj-pay-fab[aria-current="page"] {
-  background: var(--psj-green-dark);
+
+  transition:
+    background-color var(--psj-ease),
+    color var(--psj-ease);
 }
 
-/* ---- Mapa a pantalla completa ---- */
+.psj-side-link svg {
+  flex-shrink: 0;
+}
+
+.psj-side-link:hover {
+  background: var(--psj-brand-soft);
+  color: var(--psj-brand-dark);
+}
+
+.psj-side-link[aria-current="page"] {
+  background: var(--psj-brand-soft);
+
+  color: var(--psj-brand-dark);
+
+  font-weight: 700;
+}
+
+/* =========================================================
+   14. NAVEGACIÓN INFERIOR PARA CELULARES
+========================================================= */
+
+.psj-bottom-nav {
+  height: calc(
+    var(--psj-nav-h) +
+    env(safe-area-inset-bottom, 0px)
+  );
+
+  padding-bottom:
+    env(safe-area-inset-bottom, 0px);
+
+  padding-left:
+    env(safe-area-inset-left, 0px);
+
+  padding-right:
+    env(safe-area-inset-right, 0px);
+}
+
+.psj-bottom-link {
+  display: flex;
+
+  min-width: 0;
+  min-height: 44px;
+
+  flex: 1;
+  flex-direction: column;
+
+  align-items: center;
+  justify-content: center;
+
+  gap: 4px;
+
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 1.3;
+
+  color: var(--psj-muted-strong);
+
+  text-align: center;
+
+  transition:
+    color var(--psj-ease),
+    background-color var(--psj-ease);
+}
+
+.psj-bottom-link svg {
+  flex-shrink: 0;
+}
+
+.psj-bottom-link[aria-current="page"] {
+  color: var(--psj-brand);
+  font-weight: 700;
+}
+
+/* =========================================================
+   15. BOTÓN FLOTANTE DE PAGO
+========================================================= */
+
+.psj-pay-fab {
+  display: flex;
+
+  width: 56px;
+  height: 56px;
+
+  flex-shrink: 0;
+
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 999px;
+
+  background: var(--psj-brand);
+  color: #ffffff;
+
+  margin-top: -22px;
+
+  border: 4px solid var(--psj-bg);
+
+  box-shadow: var(--psj-shadow);
+
+  transition:
+    background-color var(--psj-ease),
+    transform 150ms ease;
+}
+
+.psj-pay-fab:hover {
+  background: var(--psj-brand-dark);
+}
+
+.psj-pay-fab:active {
+  transform: scale(0.96);
+}
+
+.psj-pay-fab[aria-current="page"] {
+  background: var(--psj-brand-dark);
+}
+
+/* =========================================================
+   16. MAPA A PANTALLA COMPLETA
+========================================================= */
+
 .psj-map-page {
   position: relative;
-  height: calc(100dvh - var(--psj-header-h) - var(--psj-nav-h) - env(safe-area-inset-bottom));
+
+  width: 100%;
+  min-width: 0;
+
+  height: calc(
+    100dvh -
+    var(--psj-header-h) -
+    var(--psj-nav-h) -
+    env(safe-area-inset-bottom, 0px)
+  );
+
   min-height: 360px;
+
+  isolation: isolate;
 }
+
 @media (min-width: 768px) {
   .psj-map-page {
-    height: calc(100dvh - var(--psj-header-h));
+    height: calc(
+      100dvh - var(--psj-header-h)
+    );
   }
 }
+
+/* Panel inferior del mapa */
+
 .psj-sheet-map {
   transition: height var(--psj-ease);
 }
+
 .psj-sheet-map[data-dragging="true"] {
   transition: none;
 }
+
+/* =========================================================
+   17. MARCADORES DE MICROS
+
+   Los colores de ocupación son independientes
+   de la identidad visual del usuario.
+========================================================= */
+
 [data-area] .bus-pin {
-  background: var(--psj-green);
+  background: #047857;
+
   border-radius: 999px;
+
   padding: 4px 12px 4px 8px;
 }
-[data-area] .bus-pin.s-moderado { background: #4d7c0f; }
-[data-area] .bus-pin.s-casi-lleno { background: var(--psj-warn); }
-[data-area] .bus-pin.s-lleno { background: var(--psj-danger); }
-[data-area] .bus-pin.sel {
-  outline: 3px solid var(--psj-green-dark);
-  transform: scale(1.06);
-}
-.psj-cluster {
-  display: flex;
-  width: 40px;
-  height: 40px;
-  align-items: center;
-  justify-content: center;
-  border: 3px solid #fff;
-  border-radius: 999px;
-  background: var(--psj-green-dark);
-  color: #fff;
-  font-size: 14px;
-  font-weight: 700;
-  box-shadow: 0 2px 8px rgb(0 0 0 / 0.3);
+
+/* Ocupación disponible */
+
+[data-area] .bus-pin.s-disponible {
+  background: #047857;
 }
 
-/* Controles de Leaflet: no chocan con el panel lateral (escritorio) ni quedan bajo la hoja inferior (teléfono). */
+/* Ocupación moderada */
+
+[data-area] .bus-pin.s-moderado {
+  background: #4d7c0f;
+}
+
+/* Unidad casi llena */
+
+[data-area] .bus-pin.s-casi-lleno {
+  background: #b45309;
+}
+
+/* Unidad llena */
+
+[data-area] .bus-pin.s-lleno {
+  background: #dc2626;
+}
+
+/* Unidad seleccionada */
+
+[data-area] .bus-pin.sel {
+  outline: 3px solid var(--psj-brand-dark);
+
+  transform: scale(1.06);
+}
+
+/* Agrupación de unidades */
+
+.psj-cluster {
+  display: flex;
+
+  width: 40px;
+  height: 40px;
+
+  align-items: center;
+  justify-content: center;
+
+  border: 3px solid #ffffff;
+  border-radius: 999px;
+
+  background: var(--psj-brand-dark, #064e3b);
+
+  color: #ffffff;
+
+  font-size: 14px;
+  font-weight: 800;
+
+  box-shadow:
+    0 2px 8px rgb(0 0 0 / 0.25);
+}
+
+/* =========================================================
+   18. CONTROLES DE LEAFLET
+========================================================= */
+
+[data-area] .leaflet-container {
+  background: #e2e8f0;
+  font-family: inherit;
+}
+
+[data-area] .leaflet-bar {
+  overflow: hidden;
+
+  border: 1px solid #e2e8f0;
+
+  border-radius: 10px;
+
+  box-shadow:
+    0 4px 14px rgb(15 23 42 / 0.12);
+}
+
+[data-area] .leaflet-bar a {
+  color: #334155;
+
+  background: #ffffff;
+
+  transition:
+    background-color var(--psj-ease),
+    color var(--psj-ease);
+}
+
+[data-area] .leaflet-bar a:hover {
+  background: var(--psj-brand-soft);
+  color: var(--psj-brand-dark);
+}
+
+[data-area] .leaflet-popup-content-wrapper {
+  border-radius: 16px;
+
+  box-shadow:
+    0 8px 24px rgb(15 23 42 / 0.15);
+}
+
+[data-area] .leaflet-popup-content {
+  color: #334155;
+
+  line-height: 1.5;
+}
+
+[data-area] .leaflet-popup-content strong {
+  color: #0f172a;
+}
+
+[data-area] .leaflet-control-attribution {
+  font-size: 10px;
+
+  background: rgb(255 255 255 / 0.9);
+}
+
+/* Controles accesibles en dispositivos móviles */
+
 @media (max-width: 767px) {
   .psj-map-page .leaflet-bottom.leaflet-right {
     top: 0;
     bottom: auto;
   }
 }
+
+/* Posición de controles en escritorio */
+
 @media (min-width: 768px) {
   .psj-map-page .leaflet-top.leaflet-left {
     right: 0;
     left: auto;
   }
+
   .psj-map-page .leaflet-left .leaflet-control {
     margin-right: 10px;
     margin-left: 0;
   }
 }
 
-/* ---- Modal / hoja inferior ---- */
+/* =========================================================
+   19. VENTANAS EMERGENTES Y HOJAS INFERIORES
+========================================================= */
+
 .psj-modal {
-  animation: psj-rise 200ms ease both;
+  animation: psj-rise 220ms ease both;
 }
+
 .psj-backdrop {
   animation: psj-fade 200ms ease both;
 }
-@keyframes psj-rise {
-  from { opacity: 0; transform: translateY(16px); }
-  to { opacity: 1; transform: none; }
-}
-@keyframes psj-fade {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-@keyframes psj-shimmer {
-  from { background-position: 200% 0; }
-  to { background-position: -200% 0; }
-}
 
-/* El botón global "volver arriba" no debe quedar bajo la navegación inferior. */
-@media (max-width: 767px) {
-  body:has([data-area]) button[aria-label="Volver al inicio de la página"] {
-    bottom: calc(var(--psj-nav-h) + 16px + env(safe-area-inset-bottom));
+@keyframes psj-rise {
+  from {
+    opacity: 0;
+
+    transform:
+      translateY(14px);
+  }
+
+  to {
+    opacity: 1;
+
+    transform: none;
   }
 }
 
-/* Al imprimir un comprobante solo sale el detalle abierto. */
+@keyframes psj-fade {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+/* =========================================================
+   20. BARRAS DE DESPLAZAMIENTO
+========================================================= */
+
+[data-area] {
+  scrollbar-color: #cbd5e1 transparent;
+  scrollbar-width: thin;
+}
+
+/* =========================================================
+   21. BOTÓN GLOBAL PARA VOLVER ARRIBA
+
+   Se utiliza un valor disponible desde :root
+   porque el botón puede estar fuera de data-area.
+========================================================= */
+
+@media (max-width: 767px) {
+  body:has([data-area])
+  button[aria-label="Volver al inicio de la página"] {
+    bottom: calc(
+      var(--rutabol-nav-h, 72px) +
+      16px +
+      env(safe-area-inset-bottom, 0px)
+    );
+  }
+}
+
+/* =========================================================
+   22. OPTIMIZACIÓN RESPONSIVE
+========================================================= */
+
+@media (max-width: 480px) {
+  [data-area] {
+    --psj-radius: 18px;
+    --psj-radius-sm: 12px;
+  }
+
+  .psj-btn {
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+
+  .psj-btn-lg {
+    min-height: 52px;
+    font-size: 14px;
+  }
+}
+
+/* =========================================================
+   23. IMPRESIÓN DE COMPROBANTES Y REPORTES
+========================================================= */
+
 @media print {
+  [data-area] {
+    min-height: 0 !important;
+
+    background: #ffffff !important;
+    color: #000000 !important;
+  }
+
+  /* Ocultar navegación y controles de pantalla */
+
   [data-area] aside,
-  [data-area] header,
   [data-area] nav,
   .psj-screen-only,
   .psj-backdrop,
-  .psj-no-print {
+  .psj-no-print,
+  .psj-bottom-nav {
     display: none !important;
   }
+
+  /* Conservar encabezados del contenido */
+
+  [data-area] main {
+    display: block !important;
+
+    width: 100% !important;
+    max-width: none !important;
+
+    min-height: 0 !important;
+
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
   .psj-print-root {
     position: static !important;
   }
+
   .psj-modal {
     max-height: none !important;
+
     box-shadow: none !important;
+
+    animation: none !important;
+  }
+
+  .psj-card {
+    box-shadow: none !important;
+  }
+
+  [data-area] thead {
+    display: table-header-group;
+  }
+
+  [data-area] tr {
+    break-inside: avoid;
   }
 }
 
+/* =========================================================
+   24. PREFERENCIAS DE MOVIMIENTO REDUCIDO
+========================================================= */
+
 @media (prefers-reduced-motion: reduce) {
   [data-area] *,
+  [data-area] *::before,
+  [data-area] *::after,
   .psj-modal,
   .psj-backdrop {
     animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+
     transition-duration: 0.01ms !important;
+  }
+
+  [data-area] {
+    scroll-behavior: auto !important;
+  }
+
+  .psj-skeleton {
+    animation: none !important;
   }
 }
