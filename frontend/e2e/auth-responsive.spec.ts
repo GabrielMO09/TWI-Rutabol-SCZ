@@ -2,7 +2,7 @@ import { expect, test } from "@playwright/test";
 
 // SHOTS_DIR=<carpeta> guarda capturas. No inicia sesión: solo revisa la interfaz de acceso.
 const SIZES = [[320, 568], [360, 800], [390, 844], [768, 1024], [1024, 768], [1366, 768], [1920, 1080]] as const;
-const PATHS = ["/acceso", "/acceso/pasajero", "/acceso/chofer", "/acceso/control", "/registro"];
+const PATHS = ["/acceso", "/acceso/pasajero", "/acceso/chofer", "/acceso/control", "/acceso/recuperar", "/registro"];
 
 for (const [width, height] of SIZES) {
   test(`acceso sin desbordes a ${width}px`, async ({ page }) => {
