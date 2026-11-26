@@ -24,9 +24,9 @@ for (const [width, height] of [[390, 844], [1366, 768]] as const) {
     await shot(page, `credicard-${width}`);
     await noOverflow(page);
 
-    await page.getByRole("button", { name: "Recargar", exact: true }).click();
+    await page.getByRole("button", { name: "Recargar saldo", exact: true }).click();
     const dialog = page.getByRole("dialog", { name: "Recargar saldo" });
-    await dialog.getByRole("button", { name: "10", exact: true }).click();
+    await dialog.getByRole("button", { name: "Bs 10", exact: true }).click();
     await shot(page, `recarga-${width}`);
     await dialog.getByRole("button", { name: "Continuar" }).click();
     await expect(page.getByRole("dialog", { name: "Confirma tu recarga" })).toContainText("Pago simulado");
@@ -61,3 +61,29 @@ for (const [width, height] of [[390, 844], [1366, 768]] as const) {
     }
   });
 }
+
+test("recarga rechazada con 400: se puede cambiar el monto y volver a enviar", async ({ page }) => {
+  const sent: number[] = [];
+  // El POST se simula: no crea recargas.
+  await page.route("**/wallet/recharge", (route) => {
+    if (route.request().method() !== "POST") return route.fallback();
+    sent.push(route.request().postDataJSON().amount);
+    return route.fulfill({
+      status: 400,
+      headers: { "access-control-allow-origin": new URL(page.url()).origin, "access-control-allow-credentials": "true" },
+      json: { message: "Rechazo de prueba." },
+    });
+  });
+  await login(page);
+  await page.goto("/pasajero/credicard");
+  await page.getByRole("button", { name: "Recargar saldo", exact: true }).click();
+  const dialog = page.getByRole("dialog");
+  for (const amount of ["50", "10"]) {
+    await dialog.getByRole("button", { name: `Bs ${amount}`, exact: true }).click();
+    await dialog.getByRole("button", { name: "Continuar" }).click();
+    await dialog.getByRole("button", { name: /^(Confirmar|Pagar|Solicitar|Realizar)/ }).click();
+    await expect(dialog).toContainText("Rechazo de prueba.");
+    await dialog.getByRole("button", { name: /Volver|Editar|Atrás|Modificar|Cambiar/ }).click();
+  }
+  expect(sent).toEqual([50, 10]);
+});

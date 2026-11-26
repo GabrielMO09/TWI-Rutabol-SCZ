@@ -47,6 +47,8 @@ import {
 
 import {
   act,
+  api,
+  ApiError,
   newKey,
   useFetch,
 } from "@/lib/api";
@@ -835,7 +837,7 @@ export default function Credicard() {
     setOk(null);
 
     try {
-      const err = await act(
+      await api(
         "/wallet/recharge",
         "POST",
         {
@@ -844,12 +846,6 @@ export default function Credicard() {
           idempotencyKey: key.current,
         }
       );
-
-      if (err) {
-        setMsg(err);
-
-        return;
-      }
 
       key.current = newKey();
 
@@ -867,10 +863,16 @@ export default function Credicard() {
 
       void reloadRecharges();
 
-    } catch {
-      setMsg(
-        "No se pudo confirmar el envío. Revisa tu conexión y vuelve a intentar con los mismos datos."
-      );
+    } catch (failure) {
+      const { message, status } =
+        failure as ApiError;
+
+      // Un 400 sale después de buscar la clave: no quedó nada registrado y se pueden cambiar los datos.
+      if (status === 400) {
+        attemptedRecharge.current = null;
+      }
+
+      setMsg(message);
 
     } finally {
       lock.current = false;

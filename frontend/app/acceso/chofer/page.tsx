@@ -598,7 +598,7 @@ export default function LoginChofer() {
                   </>
                 ) : (
                   <>
-                    Ingresar al panel
+                    Ingresar
 
                     <ArrowRight
                       size={19}

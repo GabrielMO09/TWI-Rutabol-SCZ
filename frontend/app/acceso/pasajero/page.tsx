@@ -192,7 +192,7 @@ export default function LoginPasajero() {
      ESTADOS DEL FORMULARIO
   ===================================== */
 
-  const [email, setEmail] = useState("");
+  const [identifier, setIdentifier] = useState("");
 
   const [password, setPassword] = useState("");
 
@@ -200,16 +200,6 @@ export default function LoginPasajero() {
     useState<string | null>(null);
 
   const [busy, setBusy] = useState(false);
-
-  /* =====================================
-     VALIDACIÓN DEL CORREO
-  ===================================== */
-
-  function isValidEmail(value: string) {
-    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(
-      value.trim()
-    );
-  }
 
   /* =====================================
      PROCESAR INICIO DE SESIÓN
@@ -224,21 +214,13 @@ export default function LoginPasajero() {
 
     setError(null);
 
-    const cleanEmail = email.trim();
+    const cleanId = identifier.trim();
 
     /* Validaciones */
 
-    if (!cleanEmail) {
+    if (!cleanId) {
       setError(
-        "Ingresa tu correo electrónico."
-      );
-
-      return;
-    }
-
-    if (!isValidEmail(cleanEmail)) {
-      setError(
-        "Ingresa un correo electrónico válido."
+        "Ingresa tu código RUDE, correo institucional o CI."
       );
 
       return;
@@ -265,7 +247,7 @@ export default function LoginPasajero() {
        */
 
       const err = await loginPassenger(
-        cleanEmail,
+        cleanId,
         password
       );
 
@@ -277,7 +259,7 @@ export default function LoginPasajero() {
 
       /* Limpiar formulario */
 
-      setEmail("");
+      setIdentifier("");
 
       setPassword("");
 
@@ -369,7 +351,7 @@ export default function LoginPasajero() {
               aria-busy={busy}
             >
 
-              {/* CORREO ELECTRÓNICO */}
+              {/* IDENTIFICADOR */}
 
               <div className="min-w-0">
 
@@ -385,10 +367,10 @@ export default function LoginPasajero() {
                 </div>
 
                 <TextField
-                  label="Correo electrónico"
-                  value={email}
+                  label="Código RUDE, correo institucional o CI"
+                  value={identifier}
                   onChange={(event) => {
-                    setEmail(event.target.value);
+                    setIdentifier(event.target.value);
 
                     if (error) setError(null);
                   }}
@@ -398,7 +380,7 @@ export default function LoginPasajero() {
                 />
 
                 <p className="mt-2 text-xs leading-relaxed text-slate-400">
-                  Utiliza el correo asociado a tu cuenta.
+                  Usa cualquiera de los tres datos asociados a tu cuenta.
                 </p>
               </div>
 
@@ -498,7 +480,7 @@ export default function LoginPasajero() {
                 aria-hidden="true"
               />
 
-              Crear una cuenta
+              Crear cuenta
 
               <ArrowRight
                 size={17}

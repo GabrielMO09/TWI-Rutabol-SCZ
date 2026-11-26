@@ -2,6 +2,7 @@
 "use client";
 
 import {
+  createElement,
   useId,
   useState,
   type ComponentProps,
@@ -85,6 +86,10 @@ const INPUT_BASE =
 
 const LABEL_BASE =
   "mb-2 block text-sm font-semibold text-slate-700";
+
+// El asterisco va por CSS: dentro del <label> cambiaría su texto ("Contraseña*").
+const REQUIRED_MARK =
+  "after:ml-1 after:text-red-500 after:content-['*']";
 
 const ERROR_STYLE =
   "border-red-300 focus:border-red-500 focus:ring-red-500/10";
@@ -231,7 +236,8 @@ export function TextField({
 
   const theme = TONES[tone];
 
-  const Icon =
+  // createElement: el lint rechaza <Icon /> cuando el componente se elige durante el render.
+  const fieldIcon =
     icon ??
     resolveIcon(
       label,
@@ -257,18 +263,9 @@ export function TextField({
 
       <label
         htmlFor={id}
-        className={LABEL_BASE}
+        className={`${LABEL_BASE} ${props.required ? REQUIRED_MARK : ""}`}
       >
         {label}
-
-        {props.required && (
-          <span
-            aria-hidden="true"
-            className="ml-1 text-red-500"
-          >
-            *
-          </span>
-        )}
       </label>
 
       {/* Contenedor del campo */}
@@ -286,7 +283,7 @@ export function TextField({
                 : theme.icon
             }`}
           >
-            <Icon size={19} />
+            {createElement(fieldIcon, { size: 19 })}
           </span>
         )}
 
@@ -390,18 +387,9 @@ export function PasswordInput({
 
       <label
         htmlFor={id}
-        className={LABEL_BASE}
+        className={`${LABEL_BASE} ${props.required ? REQUIRED_MARK : ""}`}
       >
         {label}
-
-        {props.required && (
-          <span
-            aria-hidden="true"
-            className="ml-1 text-red-500"
-          >
-            *
-          </span>
-        )}
       </label>
 
       {/* Contenedor de contraseña */}

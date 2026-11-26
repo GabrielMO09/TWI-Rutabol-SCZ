@@ -21,7 +21,8 @@ for (const [width, height] of SIZES) {
 
 test("el selector ofrece exactamente tres perfiles y ninguna consulta sin cuenta", async ({ page }) => {
   await page.goto("/acceso");
-  await expect(page.getByRole("main").getByRole("link")).toHaveCount(3);
+  // Los enlaces de registro y ayuda no son perfiles: solo se cuentan los de /acceso/.
+  await expect(page.getByRole("main").locator('a[href^="/acceso/"]')).toHaveCount(3);
   await expect(page.getByRole("link", { name: /Estudiante o pasajero/ })).toBeVisible();
   await expect(page.getByRole("link", { name: /Conductor/ })).toBeVisible();
   await expect(page.getByRole("link", { name: /Centro de Control/ })).toBeVisible();

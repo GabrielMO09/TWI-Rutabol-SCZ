@@ -494,7 +494,7 @@ export default function LoginControl() {
                   </>
                 ) : (
                   <>
-                    Ingresar al panel
+                    Ingresar
 
                     <ArrowRight
                       size={19}

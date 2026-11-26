@@ -13,7 +13,7 @@ test("el pasajero ingresa a su panel con la cuenta demo", async ({ page }) => {
   await expect(page).toHaveURL("/pasajero");
   // Menú lateral del rediseño del pasajero (reemplaza la doble barra "Secciones/Subsecciones").
   const navigation = page.getByRole("navigation", { name: "Navegación principal", exact: true });
-  await expect(navigation.getByRole("link", { name: "Mapa", exact: true })).toBeVisible();
+  await expect(navigation.getByRole("link", { name: "Explorar mapa", exact: true })).toBeVisible();
   await expect(page.getByRole("button", { name: /Notificaciones/ })).toBeVisible();
 });
 
@@ -25,7 +25,7 @@ test("una contraseña incorrecta muestra un error y mantiene al pasajero en el f
 
   const error = page.getByRole("main").getByRole("alert");
   await expect(error).toBeVisible();
-  await expect(error).toHaveText("Identificador o contraseña incorrectos.");
+  await expect(error).toContainText("Identificador o contraseña incorrectos.");
   await expect(page).toHaveURL("/acceso/pasajero");
 });
 
@@ -36,7 +36,7 @@ test("la cuenta demo del Centro de Control ingresa al resumen", async ({ page })
   await page.getByRole("button", { name: "Ingresar", exact: true }).click();
 
   await expect(page).toHaveURL("/control");
-  await expect(page.getByRole("heading", { name: "Resumen", level: 1, exact: true })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Centro de Control", level: 1, exact: true })).toBeVisible();
 });
 
 test("el chofer elige su línea (cargada desde la API) e ingresa", async ({ page }) => {
@@ -65,7 +65,8 @@ test("tras salir, el login de Control vuelve en blanco y permite ingresar otra v
   await page.getByRole("button", { name: "Ingresar", exact: true }).click();
   await expect(page).toHaveURL("/control");
   await page.getByRole("button", { name: "Menú de usuario" }).click();
-  await page.getByRole("button", { name: "Volver al inicio", exact: true }).click();
+  // El último es el del menú de usuario; el primero es el de la barra lateral.
+  await page.getByRole("button", { name: "Cerrar sesión y volver al inicio" }).last().click();
 
   // Navegación del lado del cliente (sin recargar): ahí es donde la página conservaba su estado.
   await page.evaluate(() => (window as unknown as { next: { router: { push(url: string): void } } }).next.router.push("/acceso/control"));

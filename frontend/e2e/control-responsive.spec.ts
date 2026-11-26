@@ -31,5 +31,5 @@ test("el selector de acceso no ofrece consulta pública", async ({ page }) => {
   await expect(page.getByRole("link", { name: /Centro de Control/ })).toBeVisible();
   await expect(page.getByText(/Solo consultar rutas/)).toHaveCount(0);
   await page.goto("/");
-  await expect(page.getByRole("link", { name: /Consultar rutas/ }).first()).toBeVisible();
+  await expect(page.getByRole("link", { name: /Explorar rutas/ }).first()).toBeVisible();
 });
