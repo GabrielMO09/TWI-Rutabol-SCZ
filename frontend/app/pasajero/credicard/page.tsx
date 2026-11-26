@@ -153,6 +153,8 @@ const METHODS = [
 ] as const;
 
 const QUICK = [5, 10, 20, 50];
+// Mismo tope que RECHARGE_MAX en backend/src/shared/wallet.service.ts.
+const RECHARGE_MAX = 200;
 
 const RECHARGE_PILL = {
   confirmada: {
@@ -712,7 +714,7 @@ export default function Credicard() {
   const validAmount =
     Number.isFinite(value) &&
     value >= 1 &&
-    value <= 500;
+    value <= RECHARGE_MAX;
 
   /* =====================================
      CONTROL DE VENTANAS
@@ -760,7 +762,7 @@ export default function Credicard() {
   function toSummary() {
     if (!validAmount) {
       setMsg(
-        "El monto debe estar entre Bs 1 y Bs 500."
+        `El monto debe estar entre Bs 1 y Bs ${RECHARGE_MAX}.`
       );
 
       return;
@@ -787,7 +789,7 @@ export default function Credicard() {
 
     if (!validAmount) {
       setMsg(
-        "El monto debe estar entre Bs 1 y Bs 500."
+        `El monto debe estar entre Bs 1 y Bs ${RECHARGE_MAX}.`
       );
 
       return;
@@ -1155,7 +1157,7 @@ export default function Credicard() {
 
             <p className="mt-3 text-[11px] text-slate-500">
               Puedes ingresar otro monto entre
-              Bs 1 y Bs 500.
+              Bs 1 y Bs {RECHARGE_MAX}.
             </p>
 
           </div>
@@ -1623,7 +1625,7 @@ export default function Credicard() {
                     : "text-red-600"
                 }`}
               >
-                El monto debe estar entre Bs 1 y Bs 500.
+                El monto debe estar entre Bs 1 y Bs {RECHARGE_MAX}.
               </p>
 
             </div>

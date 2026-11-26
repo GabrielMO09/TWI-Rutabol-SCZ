@@ -17,6 +17,8 @@ import { NotificationsService } from './notifications.service';
 /** Topes de ajuste manual de saldo (hallazgo #11): por operación y por día y persona de control. */
 const ADJUST_MAX = 500;
 const ADJUST_DAILY_MAX = 2000;
+/** Máximo por recarga; el frontend (credicard) repite este valor. */
+const RECHARGE_MAX = 200;
 
 @Injectable()
 export class WalletService implements OnModuleDestroy {
@@ -93,7 +95,7 @@ export class WalletService implements OnModuleDestroy {
     const items = this.memory.recharges.get(userId) ?? [];
     const existing = items.find((item) => item.idempotencyKey === key);
     if (existing) return { ...existing };
-    const amount = money(body.amount, 1, 500);
+    const amount = money(body.amount, 1, RECHARGE_MAX);
     const today = Date.now() - 86_400_000;
     const recent = items.filter((item) => item.at > today && item.status !== 'fallida')
       .reduce((sum, item) => sum + item.amount, 0);

@@ -53,9 +53,9 @@ describe('Límites de registro y reclamos HTTP', () => {
       .send({ ...REGISTRATION, photo });
   }
 
-  async function passengerCookie(): Promise<string> {
+  async function passengerCookie(id = '7654321'): Promise<string> {
     const response = await request(app.getHttpServer()).post('/api/auth/login/passenger')
-      .send({ id: '7654321', password: '123456' }).expect(201);
+      .send({ id, password: '123456' }).expect(201);
     return cookiePair(response);
   }
 
@@ -125,14 +125,21 @@ describe('Límites de registro y reclamos HTTP', () => {
       .set("Cookie", cookie).send(body).expect(201);
   });
 
-  it("limita las recargas a Bs 1000 en 24 horas", async () => {
+  it("limita cada recarga a Bs 200", async () => {
     const cookie = await passengerCookie();
-    for (let i = 0; i < 2; i += 1) {
-      await request(app.getHttpServer()).post("/api/wallet/recharge").set("Cookie", cookie)
-        .send({ amount: 500, method: "qr", idempotencyKey: `rec-tope-000${i}` });
-    }
-    await request(app.getHttpServer()).post("/api/wallet/recharge").set("Cookie", cookie)
-      .send({ amount: 500, method: "qr", idempotencyKey: "rec-tope-0009" }).expect(400);
+    const send = (amount: number, idempotencyKey: string) => request(app.getHttpServer())
+      .post("/api/wallet/recharge").set("Cookie", cookie).send({ amount, method: "qr", idempotencyKey });
+    await send(200.01, "rec-max-0001").expect(400);
+    await send(200, "rec-max-0002").expect(201);
+  });
+
+  it("limita las recargas a Bs 1000 en 24 horas", async () => {
+    const cookie = await passengerCookie("RUDE80480123"); // cuenta sin recargas previas en este archivo
+    const send = (i: number) => request(app.getHttpServer()).post("/api/wallet/recharge").set("Cookie", cookie)
+      .send({ amount: 200, method: "qr", idempotencyKey: `rec-tope-000${i}` });
+    for (let i = 0; i < 5; i += 1) await send(i).expect(201);
+    const response = await send(9).expect(400);
+    expect(response.body.message).toContain("Bs 1000");
   });
 
   it("limita el ajuste manual de saldo a Bs 500 por operación y Bs 2000 por día", async () => {
