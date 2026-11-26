@@ -3,6 +3,8 @@ import type { ArgumentMetadata, PipeTransform } from '@nestjs/common';
 
 const DANGEROUS = new Set(['__proto__', 'constructor', 'prototype']);
 const SAFE_TOKEN = /^[\w.:-]{1,64}$/; // ids de ruta y filtros: "17-045", "INC-000018", hashes, etc.
+// El id de varios usuarios es su correo (p. ej. POST /control/users/:id/status).
+const EMAIL_ID = /^(?=.{3,254}$)[\w.+-]+@[\w.-]+$/;
 
 function scan(value: unknown, depth = 0): void {
   if (depth > 12) throw new BadRequestException('Estructura demasiado profunda.');
@@ -28,7 +30,7 @@ export class InputPipe implements PipeTransform {
 
   private token(value: unknown): void {
     if (value === undefined || value === '') return;
-    if (typeof value !== 'string' || !SAFE_TOKEN.test(value)) {
+    if (typeof value !== 'string' || !(SAFE_TOKEN.test(value) || EMAIL_ID.test(value))) {
       throw new BadRequestException('Parámetro con formato no válido.');
     }
   }

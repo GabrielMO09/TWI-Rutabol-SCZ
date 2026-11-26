@@ -2,7 +2,7 @@ import { expect, test } from "@playwright/test";
 
 // SHOTS_DIR=<carpeta> guarda capturas. No inicia sesión: solo revisa la interfaz de acceso.
 const SIZES = [[320, 568], [360, 800], [390, 844], [768, 1024], [1024, 768], [1366, 768], [1920, 1080]] as const;
-const PATHS = ["/acceso", "/acceso/pasajero", "/acceso/chofer", "/acceso/control", "/acceso/recuperar", "/registro"];
+const PATHS = ["/acceso", "/acceso/pasajero", "/acceso/chofer", "/acceso/control", "/registro"];
 
 for (const [width, height] of SIZES) {
   test(`acceso sin desbordes a ${width}px`, async ({ page }) => {
@@ -33,7 +33,7 @@ test("el selector ofrece exactamente tres perfiles y ninguna consulta sin cuenta
   }
 });
 
-test("la contraseña se puede mostrar y ocultar, y solo el pasajero ofrece registro y recuperación", async ({ page }) => {
+test("la contraseña se puede mostrar y ocultar, y solo el pasajero ofrece registro y nadie ofrece recuperación", async ({ page }) => {
   await page.goto("/acceso/pasajero");
   const pw = page.getByLabel("Contraseña", { exact: true });
   await expect(pw).toHaveAttribute("type", "password");
@@ -42,7 +42,7 @@ test("la contraseña se puede mostrar y ocultar, y solo el pasajero ofrece regis
   await page.getByRole("button", { name: "Ocultar contraseña" }).click();
   await expect(pw).toHaveAttribute("type", "password");
   await expect(page.getByRole("link", { name: "Crear cuenta" })).toBeVisible();
-  await expect(page.getByRole("link", { name: "¿Olvidaste tu contraseña?" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "¿Olvidaste tu contraseña?" })).toHaveCount(0);
   for (const path of ["/acceso/chofer", "/acceso/control"]) {
     await page.goto(path);
     await expect(page.getByRole("link", { name: "Crear cuenta" })).toHaveCount(0);

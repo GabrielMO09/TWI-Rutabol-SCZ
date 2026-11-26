@@ -411,18 +411,6 @@ export default function LoginPasajero() {
                   autoComplete="current-password"
                   disabled={busy}
                 />
-
-                {/* Recuperación de contraseña */}
-
-                <div className="mt-3 flex justify-end">
-
-                  <Link
-                    href="/acceso/recuperar"
-                    className="text-xs font-semibold text-emerald-700 transition-colors hover:text-emerald-950 hover:underline"
-                  >
-                    ¿Olvidaste tu contraseña?
-                  </Link>
-                </div>
               </div>
 
               {/* MENSAJE DE ERROR */}

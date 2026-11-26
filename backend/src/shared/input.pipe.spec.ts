@@ -14,6 +14,15 @@ describe('InputPipe', () => {
     expect(pipe.transform({ line: '17', limit: '50' }, query)).toEqual({ line: '17', limit: '50' });
   });
 
+  it('acepta ids de usuario que son un correo (suspender desde el Centro de Control)', () => {
+    for (const id of ['lucia.vaca@upds.edu.bo', 'ana+scz@example.com', `${'a'.repeat(60)}@upds.edu.bo`]) {
+      expect(pipe.transform(id, param)).toBe(id);
+    }
+    for (const id of [`${'a'.repeat(250)}@upds.edu.bo`, "a'--@upds.edu.bo", '../a@upds.edu.bo', 'a@b@c']) {
+      expect(() => pipe.transform(id, param)).toThrow(BadRequestException);
+    }
+  });
+
   it('rechaza ids con SQL, rutas o longitud excesiva', () => {
     for (const id of ["' OR 1=1 --", '"; DROP TABLE rutabol.usuario;--', '../../etc/passwd', 'x'.repeat(65)]) {
       expect(() => pipe.transform(id, param)).toThrow(BadRequestException);
